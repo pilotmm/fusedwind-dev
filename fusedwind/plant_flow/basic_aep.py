@@ -83,15 +83,14 @@ class AEPComponent(Component):
         d_gross_d_cdf = dAEP_dCDF * 365.0 * 24.0 * params['turbine_number']
         d_net_d_cdf = dAEP_dCDF * factor
 
-        #loss_factor = self.availability * (1-self.array_losses) * (1-self.other_losses)
+        #loss_factor = params['availability'] * (1-params['array_losses']) * (1-params['other_losses'])
 
-        #dAEP_dlossFactor = np.array([self.net_aep/loss_factor])
+        #dAEP_dlossFactor = np.array([unknowns['net_aep']/loss_factor])
         J = {}
-        J['gross_aep', 'CDF_V'] = d_gross_d_cdf
-        J['gross_aep', 'power_curve'] = d_gross_d_p
-        J['net_aep', 'CDF_V'] = d_net_d_cdf
-        J['net_aep', 'power_curve'] = d_net_d_p
-        #self.J[0, 2*n] = dAEP_dlossFactor
+        J['gross_aep', 'CDF_V'] = np.array([d_gross_d_cdf])
+        J['gross_aep', 'power_curve'] = np.array([d_gross_d_p])
+        J['net_aep', 'CDF_V'] = np.array([d_net_d_cdf])
+        J['net_aep', 'power_curve'] = np.array([d_net_d_p])
         return J
 
 
