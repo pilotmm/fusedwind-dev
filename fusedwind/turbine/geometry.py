@@ -223,14 +223,14 @@ def write_blade_planform(pf, filename):
     data = np.zeros((pf['x'].shape[0], 9))
     s = calculate_length(data[:, [0, 1, 2]])
 
-    names = ['x', 'y', 'z', 'rot_z', 'rot_y', 'rot_z',
+    names = ['x', 'y', 'z', 'rot_x', 'rot_y', 'rot_z',
              'chord', 'rthick', 'p_le']
     for i, name in enumerate(names):
         data[:, i] = pf[name]
     fid = open(filename, 'w')
     exp_prec = 15             # exponential precesion
     col_width = exp_prec + 10  # column width required for exp precision
-    header_full = ''
+    header_full = '#'
     header_full += ''.join([(hh + ' [%i]').center(col_width + 1) % i
                            for i, hh in enumerate(names)]) + '\n'
     fid.write(header_full)
@@ -475,7 +475,7 @@ class ScaleChord(Component):
     def __init__(self, size, suffix=''):
         super(ScaleChord, self).__init__()
 
-        self.add_param('blade_scale', 0.)
+        self.add_param('blade_scale', 1.)
         self.add_param('chord_in', np.zeros(size))
         self.add_output('chord' + suffix, np.zeros(size))
         self._suffix = suffix
@@ -552,8 +552,6 @@ class SplinedBladePlanform(Group):
         self._size = pf['s'].shape[0]
         self.pfinit = pf
         self._vars = []
-
-        self.add('blade_scale_c', IndepVarComp('blade_scale', 1.), promotes=['*'])
 
     def add_spline(self, name, Cx, spline_type='bezier', scaler=1.):
         """
@@ -677,7 +675,7 @@ class PGLLoftedBladeSurface(Component):
             if k in self.config.keys():
                 self.config[k] = v
             else:
-                print 'unknown config key %s' % s
+                print 'unknown config key %s' % k
 
         self.rot_order = np.array([2,1,0])
 
@@ -727,11 +725,7 @@ class PGLLoftedBladeSurface(Component):
         self.pgl_surf.build_blade()
 
         surf = self.pgl_surf.surface
-        surf[:, :, 0] *= params['blade_length']
-        surf[:, :, 1] *= params['blade_length']
         surfnorot = self.pgl_surf.surfnorot
-        surfnorot[:, :, 0] *= params['blade_length']
-        surfnorot[:, :, 1] *= params['blade_length']
 
         self.unknowns['blade_surface' + self._suffix] = surf
         self.unknowns['blade_surface_norm' + self._suffix] = surfnorot
