@@ -696,7 +696,9 @@ class BladeLayup(object):
                         t = t + max_thick
                 plt.ylim([0, maxthick]) # set all plot limits to maxthickness
                 plt.xlim([0, 1])
-                plt.legend(loc = 'best')
+                legend = plt.legend(loc = 'best', framealpha=0.0)
+                #frame = legend.get_frame()
+                #frame.set_alpha(0.0)
                 pb.savefig(fig1) # save fig to plybook
         
         rsets, rmaxthick = _region_sets(self.regions)
