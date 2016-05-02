@@ -168,16 +168,29 @@ class Material(object):
         :return: A list of material properties suitable for the st3d dict
 
         '''
-        return [self.E1,
-                self.E2,
-                self.E3,
-                self.nu12,
-                self.nu13,
-                self.nu23,
-                self.G12,
-                self.G13,
-                self.G23,
-                self.rho]
+        matprops_list = [self.E1,
+                         self.E2,
+                         self.E3,
+                         self.nu12,
+                         self.nu13,
+                         self.nu23,
+                         self.G12,
+                         self.G13,
+                         self.G23,
+                         self.rho]
+
+        matprops_labels = ['E1',
+                           'E2',
+                           'E3',
+                           'nu12',
+                           'nu13',
+                           'nu23',
+                           'G12',
+                           'G13',
+                           'G23',
+                           'rho']
+
+        return matprops_list, matprops_labels
 
     def set_resists_strains_iso(self, failcrit, e11_t, e11_c, g12):
         ''' Sets the characteristic allowable strains for an isotropic material.
@@ -258,39 +271,65 @@ class Material(object):
         :return: A list of resistances and safety factors suitable for the 
                  st3d dict
         '''
-        return [self.s11_t,
-                self.s22_t,
-                self.s33_t,
-                self.s11_c,
-                self.s22_c,
-                self.s33_c,
-                self.t12,
-                self.t13,
-                self.t23,
-                self.e11_c,
-                self.e22_c,
-                self.e33_c,
-                self.e11_t,
-                self.e22_t,
-                self.e33_t,
-                self.g12,
-                self.g13,
-                self.g23,
-                self.gM0,
-                self.C1a,
-                self.C2a,
-                self.C3a,
-                self.C4a]
+        failmat_list = [self.s11_t,
+                        self.s22_t,
+                        self.s33_t,
+                        self.s11_c,
+                        self.s22_c,
+                        self.s33_c,
+                        self.t12,
+                        self.t13,
+                        self.t23,
+                        self.e11_c,
+                        self.e22_c,
+                        self.e33_c,
+                        self.e11_t,
+                        self.e22_t,
+                        self.e33_t,
+                        self.g12,
+                        self.g13,
+                        self.g23,
+                        self.gM0,
+                        self.C1a,
+                        self.C2a,
+                        self.C3a,
+                        self.C4a]
+
+        failmat_labels = ['s11_t',
+                          's22_t',
+                          's33_t',
+                          's11_c',
+                          's22_c',
+                          's33_c',
+                          't12',
+                          't13',
+                          't23',
+                          'e11_c',
+                          'e22_c',
+                          'e33_c',
+                          'e11_t',
+                          'e22_t',
+                          'e33_t',
+                          'g12',
+                          'g13',
+                          'g23',
+                          'gM0',
+                          'C1a',
+                          'C2a',
+                          'C3a',
+                          'C4a']
+
+        return failmat_list, failmat_labels
 
 
 class DivisionPoint(object):
     '''Holds a division point's arc positions on the blade surface.
 
-    :param arc: arc length positions on airfoil's surface 
+    :param arc: arc length positions on airfoil's surface
             -1.0 = trailing edge suction side
             1.0 = trailing edge pressure side
             0.0 = leading edge
-    :type arc: array 
+    :type arc: array
     '''
 
     def __init__(self):
@@ -430,12 +469,12 @@ class BladeLayup(object):
         :param nb: Number of webs to be initialized
         :type nb: integer
         :param ibonds: List of DP index quads connecting a web
-            Example: [[0, 1, -2, -1]] 
+            Example: [[0, 1, -2, -1]]
         :param names: Names of bonds (optional), must have the length of nb
 
         '''
         self.bonds = OrderedDict()
-        #self.ibonds = None
+        # self.ibonds = None
         self.ibonds = ibonds
         for i in range(nb):
             try:
@@ -480,7 +519,7 @@ class BladeLayup(object):
 
         This method compares the length of any vectors in DPs, regions and webs
         with BladeLayup's s length. Further, materials set as layers are checked
-        for their existence in the materials dict. Also initilized objects are 
+        for their existence in the materials dict. Also initilized objects are
         checked if they have unset values.
         '''
         print('Starting consistency check of BladeLayup.')
@@ -576,16 +615,6 @@ class BladeLayup(object):
 
         cm = plt.get_cmap('jet')
 
-        plt.figure()
-        plt.title('DPs')
-        for di, dk in enumerate(sorted(self.DPs, reverse=True)):
-            plt.plot(self.s, self.DPs[dk].arc, label=dk[-2:])
-        plt.legend(loc='best', prop={'size': 6}, bbox_to_anchor=(1, 1))
-        # draw station lines
-        for s in self.s:
-            plt.plot([self.s, self.s], [-1, 1], 'k', linewidth=0.5)
-        pb.savefig()  # save fig to plybook
-
         # create material color dict (necessary for the case that materials list
         # is longer than 7)
         start = 0.2
@@ -595,6 +624,91 @@ class BladeLayup(object):
         cm_dict = {}
         for i, m in enumerate(self.materials.iterkeys()):
             cm_dict[m] = mat_colors[i]
+
+        # material properties
+        plt.figure()
+        plt.title('MATPROPS')
+        N = 10
+        ind = np.arange(N)    # the x locations for the groups
+        # the width of the bars: can also be len(x) sequence
+        width = 1.0 / N
+        for i, mat_name in enumerate(self.materials.iterkeys()):
+            plt.bar(
+                ind + i * width, self.materials[mat_name].matprops()[0], width,
+                color=cm_dict[mat_name], label=mat_name, log=1)
+            matprops_labels = self.materials[mat_name].matprops()[1]
+
+        plt.xticks(ind + .5, matprops_labels)
+        plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+        pb.savefig()  # save fig to plybook
+
+        # failmat_stress
+        plt.figure()
+        plt.title('FAILMAT_STRESS')
+        N = 9
+        ind = np.arange(N)    # the x locations for the groups
+        # the width of the bars: can also be len(x) sequence
+        width = 1.0 / N
+        for i, mat_name in enumerate(self.materials.iterkeys()):
+            plt.bar(
+                ind + i * width, self.materials[mat_name].failmat()[0][:N],
+                width,
+                color=cm_dict[mat_name], label=mat_name, log=1)
+            if i == 1:
+                matprops_labels = self.materials[mat_name].failmat()[1]
+
+        plt.xticks(ind + .5, matprops_labels[:N])
+        plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+        pb.savefig()  # save fig to plybook
+
+        # failmat_strain
+        plt.figure()
+        plt.title('FAILMAT_STRAIN')
+        N = 9
+        ind = np.arange(N)    # the x locations for the groups
+        # the width of the bars: can also be len(x) sequence
+        width = 1.0 / N
+        for i, mat_name in enumerate(self.materials.iterkeys()):
+            plt.bar(
+                ind + i *
+                width, self.materials[mat_name].failmat()[0][N:2 * N - 1],
+                width,
+                color=cm_dict[mat_name], label=mat_name)
+            if i == 1:
+                matprops_labels = self.materials[mat_name].failmat()[1]
+
+        plt.xticks(ind + .5, matprops_labels[N:2 * N - 1])
+        plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+
+        # failmat_safety
+        plt.figure()
+        plt.title('FAILMAT_SAFETY')
+        N = 9
+        ind = np.arange(N)    # the x locations for the groups
+        # the width of the bars: can also be len(x) sequence
+        width = 1.0 / N
+        for i, mat_name in enumerate(self.materials.iterkeys()):
+            plt.bar(
+                ind + i *
+                width, self.materials[
+                    mat_name].failmat()[0][2 * N - 1:3 * N - 1],
+                width,
+                color=cm_dict[mat_name], label=mat_name)
+            if i == 1:
+                matprops_labels = self.materials[mat_name].failmat()[1]
+
+        plt.xticks(ind + .5, matprops_labels[2 * N - 1:3 * N - 1])
+        plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+
+        plt.figure()
+        plt.title('DPs')
+        for di, dk in enumerate(sorted(self.DPs, reverse=True)):
+            plt.plot(self.s, self.DPs[dk].arc, label=dk[-2:])
+        plt.legend(loc='best', prop={'size': 6}, bbox_to_anchor=(1, 1))
+        # draw station lines
+        for s in self.s:
+            plt.plot([self.s, self.s], [-1, 1], 'k', linewidth=0.5)
+        pb.savefig()  # save fig to plybook
 
         def _region_sets(reg_type):
             ''' Compares all regions of reg_type and creates a list of unique reg_types
@@ -726,10 +840,7 @@ class BladeLayup(object):
                                          label=mat_name if int(mat_count) == 0 else "_nolegend_")
                         t = t + max_thick
                 plt.ylim([0, maxthick])  # set all plot limits to maxthickness
-                plt.xlim([0, 1])
-                legend = plt.legend(loc='best', framealpha=0.0)
-                #frame = legend.get_frame()
-                # frame.set_alpha(0.0)
+                plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
                 pb.savefig(fig1)  # save fig to plybook
 
         rsets, rmaxthick = _region_sets(self.regions)
@@ -768,7 +879,7 @@ def create_bladestructure(bl):
     failmat = []
     failcrit = []
     for v in bl.materials.itervalues():
-        matprops.append(v.matprops())
+        matprops.append(v.matprops()[0])
         failmat.append(v.failmat())
         failcrit.append(v.failcrit)
 
