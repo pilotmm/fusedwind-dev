@@ -11,103 +11,101 @@ import shutil
 
 
 def configure():
-    
+
     bl = BladeLayup()
-    
+
     biax = bl.add_material('triax')
-    
-    biax.set_props(E1 = 13.92e9,
-                     E2 = 13.92e9,
-                     E3 = 13.92e9,
-                     nu12 = 0.533,
-                     nu13 = 0.533,
-                     nu23 = 0.533,
-                     G12 = 11.5e9,
-                     G13 = 4.539e9,
-                     G23 = 4.539e9,
-                     rho = 1845)
-    
-    biax.set_resists_strains(failcrit = 'maximum_strain',
-                             e11_t = 9.52E-03,
-                             e22_t = 1.00E+06,
-                             e33_t = 1.00E+06,
-                             e11_c = 6.80E-03,
-                             e22_c = 1.00E+06,
-                             e33_c = 1.00E+06,
-                             g12 = 1.00E+06,
-                             g13 = 1.00E+06,
-                             g23 = 1.00E+06)
-    
-    biax.set_safety_GL2010(gM0 = 1.25,
-                           C1a = 1.0,
-                           C2a = 1.0,
-                           C3a = 1.0,
-                           C4a = 1.0)
+
+    biax.set_props(E1=13.92e9,
+                   E2=13.92e9,
+                   E3=13.92e9,
+                   nu12=0.533,
+                   nu13=0.533,
+                   nu23=0.533,
+                   G12=11.5e9,
+                   G13=4.539e9,
+                   G23=4.539e9,
+                   rho=1845)
+
+    biax.set_resists_strains(failcrit='maximum_strain',
+                             e11_t=9.52E-03,
+                             e22_t=1.00E+06,
+                             e33_t=1.00E+06,
+                             e11_c=6.80E-03,
+                             e22_c=1.00E+06,
+                             e33_c=1.00E+06,
+                             g12=1.00E+06,
+                             g13=1.00E+06,
+                             g23=1.00E+06)
+
+    biax.set_safety_GL2010(gM0=1.25,
+                           C1a=1.0,
+                           C2a=1.0,
+                           C3a=1.0,
+                           C4a=1.0)
 
     uniax = bl.add_material('uniax')
-    uniax.set_props(E1 = 41.63e9,
-                    E2 = 14.93e9,
-                    E3 = 14.93e9,
-                    nu12 = 0.241,
-                    nu13 = 0.241,
-                    nu23 = 0.241,
-                    G12 = 5.047e9,
-                    G13 = 5.047e9,
-                    G23 = 5.047e9,
-                    rho = 1915.5)
-    
-    
-    uniax.set_resists_strains(failcrit = 'maximum_strain',
-                             e11_t = 9.52E-03,
-                             e22_t = 1.00E+06,
-                             e33_t = 1.00E+06,
-                             e11_c = 6.80E-03,
-                             e22_c = 1.00E+06,
-                             e33_c = 1.00E+06,
-                             g12 = 1.00E+06,
-                             g13 = 1.00E+06,
-                             g23 = 1.00E+06)
+    uniax.set_props(E1=41.63e9,
+                    E2=14.93e9,
+                    E3=14.93e9,
+                    nu12=0.241,
+                    nu13=0.241,
+                    nu23=0.241,
+                    G12=5.047e9,
+                    G13=5.047e9,
+                    G23=5.047e9,
+                    rho=1915.5)
 
-    uniax.set_safety_GL2010(gM0 = 1.25,
-                           C1a = 1.0,
-                           C2a = 1.0,
-                           C3a = 1.0,
-                           C4a = 1.0)
+    uniax.set_resists_strains(failcrit='maximum_strain',
+                              e11_t=9.52E-03,
+                              e22_t=1.00E+06,
+                              e33_t=1.00E+06,
+                              e11_c=6.80E-03,
+                              e22_c=1.00E+06,
+                              e33_c=1.00E+06,
+                              g12=1.00E+06,
+                              g13=1.00E+06,
+                              g23=1.00E+06)
+
+    uniax.set_safety_GL2010(gM0=1.25,
+                            C1a=1.0,
+                            C2a=1.0,
+                            C3a=1.0,
+                            C4a=1.0)
 
     core = bl.add_material('core')
-    core.set_props(E1 = 50e6,
-                   E2 = 50e6,
-                   E3 = 50e6,
-                   nu12 = 0.5,
-                   nu13 = 0.013,
-                   nu23 = 0.013,
-                   G12 = 16.67e6,
-                   G13 = 150e6,
-                   G23 = 150e6,
-                   rho = 110)
+    core.set_props(E1=50e6,
+                   E2=50e6,
+                   E3=50e6,
+                   nu12=0.5,
+                   nu13=0.013,
+                   nu23=0.013,
+                   G12=16.67e6,
+                   G13=150e6,
+                   G23=150e6,
+                   rho=110)
 
+    core.set_resists_strains(failcrit='maximum_strain',
+                             e11_t=9.52E-03,
+                             e22_t=1.00E+06,
+                             e33_t=1.00E+06,
+                             e11_c=6.80E-03,
+                             e22_c=1.00E+06,
+                             e33_c=1.00E+06,
+                             g12=1.00E+06,
+                             g13=1.00E+06,
+                             g23=1.00E+06)
 
-    core.set_resists_strains(failcrit = 'maximum_strain',
-                             e11_t = 9.52E-03,
-                             e22_t = 1.00E+06,
-                             e33_t = 1.00E+06,
-                             e11_c = 6.80E-03,
-                             e22_c = 1.00E+06,
-                             e33_c = 1.00E+06,
-                             g12 = 1.00E+06,
-                             g13 = 1.00E+06,
-                             g23 = 1.00E+06)
-    
-    core.set_safety_GL2010(gM0 = 1.25,
-                           C1a = 1.0,
-                           C2a = 1.0,
-                           C3a = 1.0,
-                           C4a = 1.0)
-    
+    core.set_safety_GL2010(gM0=1.25,
+                           C1a=1.0,
+                           C2a=1.0,
+                           C3a=1.0,
+                           C4a=1.0)
+
     bl.s = [0, 0.25, 0.6, 1.]
-    
+
     bl.init_regions(5)
-    
+
     bl.DPs['DP00'].arc = np.ones(4) * -1.
     bl.DPs['DP05'].arc = np.ones(4) * 1.
     bl.DPs['DP01'].arc = np.ones(4) * -0.5
@@ -116,9 +114,9 @@ def configure():
     bl.DPs['DP04'].arc = np.ones(4) * 0.5
     bl.DPs['DP04'].arc[0] = 0.49
     bl.DPs['DP04'].arc[-1] = 0.51
-    bl.DPs['DP02'].arc = np.ones(4) * -0.35 
+    bl.DPs['DP02'].arc = np.ones(4) * -0.35
     bl.DPs['DP03'].arc = np.ones(4) * 0.3
-    
+
     # add materials to regions
     r = bl.regions['region00']
     l = r.add_layer('triax')
@@ -152,7 +150,7 @@ def configure():
     l.thickness = np.array([0.008, 0.000, 0.099, 0.000])
     l.angle = np.zeros(4)
     bl.regions['region03'] = copy.copy(r)
-    
+
     r = bl.regions['region02']
     l = r.add_layer('triax')
     l.thickness = np.array([0.008, 0.003, 0.0015, 0.0011])
@@ -169,7 +167,7 @@ def configure():
     l = r.add_layer('triax')
     l.thickness = np.array([0.008, 0.003, 0.0015, 0.0011])
     l.angle = np.zeros(4)
-    
+
     bl.init_webs(2, [[2, 3], [1, 4]])
     w = bl.webs['web00']
     l = w.add_layer('triax')
@@ -182,45 +180,46 @@ def configure():
     l.thickness = np.array([0.0025, 0.0045, 0.004, 0.001])
     l.angle = np.zeros(4)
     bl.webs['web01'] = copy.copy(w)
-    
+
     bl.check_consistency()
-    
+
     return bl, uniax
+
 
 def configure_incorrect():
 
     bl = BladeLayup()
-    
+
     biax = bl.add_material('triax')
-    
-    biax.set_props(E1 = 13.92e9,
-                     E2 = 13.92e9,
-                     E3 = 13.92e9,
-                     nu12 = 0.533,
-                     nu13 = 0.533,
-                     nu23 = 0.533,
-                     G12 = 11.5e9,
-                     G13 = 4.539e9,
-                     G23 = 4.539e9,
-                     rho = 1845)
-    
-    biax.set_resists_strains(failcrit = 'maximum_strain',
-                             e11_t = 9.52E-03,
-                             e22_t = 1.00E+06,
-                             e33_t = 1.00E+06,
-                             e11_c = 6.80E-03,
-                             e22_c = 1.00E+06,
-                             e33_c = 1.00E+06,
-                             g12 = 1.00E+06,
-                             g13 = 1.00E+06,
-                             g23 = 1.00E+06)
-    
-    biax.set_safety_GL2010(gM0 = 1.25,
-                           C1a = 1.0,
-                           C2a = 1.0,
-                           C3a = 1.0,
-                           C4a = 1.0)
-    
+
+    biax.set_props(E1=13.92e9,
+                   E2=13.92e9,
+                   E3=13.92e9,
+                   nu12=0.533,
+                   nu13=0.533,
+                   nu23=0.533,
+                   G12=11.5e9,
+                   G13=4.539e9,
+                   G23=4.539e9,
+                   rho=1845)
+
+    biax.set_resists_strains(failcrit='maximum_strain',
+                             e11_t=9.52E-03,
+                             e22_t=1.00E+06,
+                             e33_t=1.00E+06,
+                             e11_c=6.80E-03,
+                             e22_c=1.00E+06,
+                             e33_c=1.00E+06,
+                             g12=1.00E+06,
+                             g13=1.00E+06,
+                             g23=1.00E+06)
+
+    biax.set_safety_GL2010(gM0=1.25,
+                           C1a=1.0,
+                           C2a=1.0,
+                           C3a=1.0,
+                           C4a=1.0)
+
     # incorrect setting of uniax properties
     uniax = bl.add_material('uniax')
     uniax.E1 = 41.63e9
@@ -233,18 +232,18 @@ def configure_incorrect():
     uniax.G13 = 5.047e9
     uniax.G23 = 5.047e9
     uniax.rho = 1915.5
-    
-    uniax.set_resists_strains(failcrit = 'maximum_strain',
-                             e11_t = 9.52E-03,
-                             e22_t = 1.00E+06,
-                             e33_t = 1.00E+06,
-                             e11_c = 6.80E-03,
-                             e22_c = 1.00E+06,
-                             e33_c = 1.00E+06,
-                             g12 = 1.00E+06,
-                             g13 = 1.00E+06,
-                             g23 = 1.00E+06)
-    
+
+    uniax.set_resists_strains(failcrit='maximum_strain',
+                              e11_t=9.52E-03,
+                              e22_t=1.00E+06,
+                              e33_t=1.00E+06,
+                              e11_c=6.80E-03,
+                              e22_c=1.00E+06,
+                              e33_c=1.00E+06,
+                              g12=1.00E+06,
+                              g13=1.00E+06,
+                              g23=1.00E+06)
+
     # missing safety factors
     #--------------------------------------- uniax.set_safety_GL2010(gM0 = 1.25,
     #----------------------------------------- C1a = 1.0,
@@ -253,75 +252,75 @@ def configure_incorrect():
     #----------------------------------------- C4a = 1.0)
 
     core = bl.add_material('core')
-    core.set_props(E1 = 50e6,
-                   E2 = 50e6,
-                   E3 = 50e6,
-                   nu12 = 0.5,
-                   nu13 = 0.013,
-                   nu23 = 0.013,
-                   G12 = 16.67e6,
-                   G13 = 150e6,
-                   G23 = 150e6,
-                   rho = 110)
+    core.set_props(E1=50e6,
+                   E2=50e6,
+                   E3=50e6,
+                   nu12=0.5,
+                   nu13=0.013,
+                   nu23=0.013,
+                   G12=16.67e6,
+                   G13=150e6,
+                   G23=150e6,
+                   rho=110)
 
-    core.set_resists_strains(failcrit = 'maximum_strain',
-                             e11_t = 9.52E-03,
-                             e22_t = 1.00E+06,
-                             e33_t = 1.00E+06,
-                             e11_c = 6.80E-03,
-                             e22_c = 1.00E+06,
-                             e33_c = 1.00E+06,
-                             g12 = 1.00E+06,
-                             g13 = 1.00E+06,
-                             g23 = 1.00E+06)
-    
-    core.set_safety_GL2010(gM0 = 1.25,
-                           C1a = 1.0,
-                           C2a = 1.0,
-                           C3a = 1.0,
-                           C4a = 1.0)
-    
+    core.set_resists_strains(failcrit='maximum_strain',
+                             e11_t=9.52E-03,
+                             e22_t=1.00E+06,
+                             e33_t=1.00E+06,
+                             e11_c=6.80E-03,
+                             e22_c=1.00E+06,
+                             e33_c=1.00E+06,
+                             g12=1.00E+06,
+                             g13=1.00E+06,
+                             g23=1.00E+06)
+
+    core.set_safety_GL2010(gM0=1.25,
+                           C1a=1.0,
+                           C2a=1.0,
+                           C3a=1.0,
+                           C4a=1.0)
+
     adhesive = bl.add_material('adhesive')
-    adhesive.set_props(E1 = 50e6,
-                   E2 = 50e6,
-                   E3 = 50e6,
-                   nu12 = 0.5,
-                   nu13 = 0.013,
-                   nu23 = 0.013,
-                   G12 = 16.67e6,
-                   G13 = 150e6,
-                   G23 = 150e6,
-                   rho = 110)
+    adhesive.set_props(E1=50e6,
+                       E2=50e6,
+                       E3=50e6,
+                       nu12=0.5,
+                       nu13=0.013,
+                       nu23=0.013,
+                       G12=16.67e6,
+                       G13=150e6,
+                       G23=150e6,
+                       rho=110)
 
-    adhesive.set_resists_strains(failcrit = 'maximum_strain',
-                             e11_t = 9.52E-03,
-                             e22_t = 1.00E+06,
-                             e33_t = 1.00E+06,
-                             e11_c = 6.80E-03,
-                             e22_c = 1.00E+06,
-                             e33_c = 1.00E+06,
-                             g12 = 1.00E+06,
-                             g13 = 1.00E+06,
-                             g23 = 1.00E+06)
-    
-    adhesive.set_safety_GL2010(gM0 = 1.25,
-                           C1a = 1.0,
-                           C2a = 1.0,
-                           C3a = 1.0,
-                           C4a = 1.0)
-    
+    adhesive.set_resists_strains(failcrit='maximum_strain',
+                                 e11_t=9.52E-03,
+                                 e22_t=1.00E+06,
+                                 e33_t=1.00E+06,
+                                 e11_c=6.80E-03,
+                                 e22_c=1.00E+06,
+                                 e33_c=1.00E+06,
+                                 g12=1.00E+06,
+                                 g13=1.00E+06,
+                                 g23=1.00E+06)
+
+    adhesive.set_safety_GL2010(gM0=1.25,
+                               C1a=1.0,
+                               C2a=1.0,
+                               C3a=1.0,
+                               C4a=1.0)
+
     bl.s = [0, 0.25, 0.6, 1.]
-    
+
     bl.init_regions(5)
-    
+
     bl.DPs['DP00'].arc = np.ones(4) * -1.
     bl.DPs['DP05'].arc = np.ones(4) * 1.
     # incorrect DP length
-    bl.DPs['DP01'].arc = np.ones(1) * -0.5 
+    bl.DPs['DP01'].arc = np.ones(1) * -0.5
     bl.DPs['DP04'].arc = np.ones(4) * 0.5
-    bl.DPs['DP02'].arc = np.ones(4) * -0.35 
+    bl.DPs['DP02'].arc = np.ones(4) * -0.35
     bl.DPs['DP03'].arc = np.ones(4) * 0.3
-    
+
     # add materials to regions
     r = bl.regions['region00']
     l = r.add_layer('triax')
@@ -348,7 +347,7 @@ def configure_incorrect():
     l.angle = np.zeros(4)
     l = r.add_layer('uniax')
     # incorrect thickness and angle lengths
-    l.thickness = np.array([0.008, 0.04]) #, 0.04, 0.002
+    l.thickness = np.array([0.008, 0.04])  # , 0.04, 0.002
     l.angle = np.zeros(3)
     l = r.add_layer('uniax')
     l.thickness = np.array([0.008, 0.04, 0.04, 0.002])
@@ -357,7 +356,7 @@ def configure_incorrect():
     l.thickness = np.array([0.008, 0.000, 0.099, 0.000])
     l.angle = np.zeros(4)
     bl.regions['region03'] = copy.copy(r)
-    
+
     r = bl.regions['region02']
     l = r.add_layer('triax')
     l.thickness = np.array([0.008, 0.003, 0.0015, 0.0011])
@@ -374,7 +373,7 @@ def configure_incorrect():
     l = r.add_layer('triax')
     l.thickness = np.array([0.008, 0.003, 0.0015, 0.0011])
     l.angle = np.zeros(4)
-    
+
     bl.init_webs(2, [[2, 3], [1, 4]])
     w = bl.webs['web00']
     l = w.add_layer('triax')
@@ -387,59 +386,60 @@ def configure_incorrect():
     l.thickness = np.array([0.0025, 0.0045, 0.004, 0.001])
     l.angle = np.zeros(4)
     bl.webs['web01'] = copy.copy(w)
-    
+
     bl.init_bonds(1, [[0, 1, -2, -1]])
     b = bl.bonds['bond00']
     l = b.add_layer('adhesive')
     l.thickness = np.array([0.0, 1.0, 1.0, 0.0])
     l.angle = np.zeros(4)
-    
+
     bl.check_consistency()
-    
+
     return bl
     pass
-    
+
 
 class LayupTests(unittest.TestCase):
     ''' This class contains the unit tests for
         :mod:`fusedwind.turbine.layup`.
     '''
+
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.test_dir = 'test_dir'
         self.bl, self.uniax = configure()
         self.st3d = create_bladestructure(self.bl)
-    
+
     def tearDown(self):
         unittest.TestCase.tearDown(self)
-    
+
     def test_check_consistency(self):
         self.assertEqual(self.bl._warns, 0, None)
-        
+
     def test_print_plybook_explode(self):
-        self.bl.print_plybook(filename = 'plybook_explode', vmode = 'explode')
-    
+        self.bl.print_plybook(filename='plybook_explode', vmode='explode')
+
     def test_print_plybook_stack(self):
-        self.bl.print_plybook(filename = 'plybook_stack', vmode = 'stack')
-    
+        self.bl.print_plybook(filename='plybook_stack', vmode='stack')
+
     def test_check_consistency_incorrect(self):
         self.bl_inc = configure_incorrect()
         self.assertEqual(self.bl_inc._warns, 15, None)
-        
+
     def test_create_bladestructure_division_points(self):
         self.assertEqual(np.testing.assert_array_equal(
-                         self.st3d['DPs'][:,4],
+                         self.st3d['DPs'][:, 4],
                          self.bl.DPs['DP04'].arc), None)
-        
+
     def test_create_bladestructure_thicknesses(self):
         self.assertEqual(np.testing.assert_array_equal(
-                         self.st3d['regions'][2]['thicknesses'][:,4],
+                         self.st3d['regions'][2]['thicknesses'][:, 4],
                          self.bl.regions['region02'].layers['triax01'].thickness), None)
-        
+
     def test_create_bladestructure_materials(self):
         uniax = self.uniax
         self.assertEqual(np.testing.assert_array_equal(
-                         self.st3d['matprops'][1,:],
+                         self.st3d['matprops'][1, :],
                          [uniax.E1,
                           uniax.E2,
                           uniax.E3,
@@ -451,21 +451,21 @@ class LayupTests(unittest.TestCase):
                           uniax.G23,
                           uniax.rho,
                           ]), None)
-        
+
     def test_create_write_read_bladestructure(self):
         if not os.path.exists(self.test_dir):
             os.makedirs(self.test_dir)
-        write_bladestructure(self.st3d, os.path.join(self.test_dir,'test'))
-        st3dn = read_bladestructure(os.path.join(self.test_dir,'test'))
+        write_bladestructure(self.st3d, os.path.join(self.test_dir, 'test'))
+        st3dn = read_bladestructure(os.path.join(self.test_dir, 'test'))
         self.assertEqual(np.testing.assert_array_equal(
-                         self.st3d['DPs'][:,4],
-                         st3dn['DPs'][:,4]), None)
+                         self.st3d['DPs'][:, 4],
+                         st3dn['DPs'][:, 4]), None)
         self.assertEqual(np.testing.assert_array_equal(
-                         self.st3d['regions'][2]['thicknesses'][:,4],
-                         st3dn['regions'][2]['thicknesses'][:,4]), None)
+                         self.st3d['regions'][2]['thicknesses'][:, 4],
+                         st3dn['regions'][2]['thicknesses'][:, 4]), None)
         uniax = self.uniax
         self.assertEqual(np.testing.assert_array_equal(
-                         self.st3d['matprops'][1,:],
+                         self.st3d['matprops'][1, :],
                          [uniax.E1,
                           uniax.E2,
                           uniax.E3,
@@ -478,7 +478,7 @@ class LayupTests(unittest.TestCase):
                           uniax.rho,
                           ]), None)
         shutil.rmtree(self.test_dir)
-        
+
 if __name__ == '__main__':
-    #configure()
+    # configure()
     unittest.main()
