@@ -165,9 +165,10 @@ class Material(object):
 
     def matprops(self):
         ''' Returns the list of material properties.
-        
-        :return: A list of material properties suitable for the st3d dict
 
+        :return matprops_list: list of material properties suitable for the st3d
+            dict
+        :return matprops_labels: list of labels used in matprops_list
         '''
         matprops_list = [self.E1,
                          self.E2,
@@ -269,8 +270,9 @@ class Material(object):
     def failmat(self):
         ''' Returns the list of material resistances and safety factors.
 
-        :return: A list of resistances and safety factors suitable for the 
-                 st3d dict
+        :return failmat_list: list of resistances and safety factors suitable
+            for the st3d dict
+        :return failmat_labels: list of labels used in failmat_list
         '''
         failmat_list = [self.s11_t,
                         self.s22_t,
@@ -886,7 +888,7 @@ def create_bladestructure(bl):
     failcrit = []
     for v in bl.materials.itervalues():
         matprops.append(v.matprops()[0])
-        failmat.append(v.failmat())
+        failmat.append(v.failmat()[0])
         failcrit.append(v.failcrit)
 
     st3d['matprops'] = np.r_[matprops]
@@ -934,7 +936,7 @@ def create_bladestructure(bl):
 def pickle_bladelayup(bl):
     ''' pickle a bl object into an ascii file
 
-    :param class: bl
+    :param bl
     :return: List of regions
     '''
 
@@ -945,7 +947,7 @@ def pickle_bladelayup(bl):
 def unpickle_bladelayup():
     ''' unpickle a bl object from an ascii file
 
-    :return: class: bl
+    :return: bl
     '''
     with open('bl.pkl', 'rb') as myrestoredata:
         bl = cPickle.load(myrestoredata)
