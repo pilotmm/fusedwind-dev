@@ -164,7 +164,7 @@ class Material(object):
 
     def matprops(self):
         ''' Returns the list of material properties.
-
+        
         :return: A list of material properties suitable for the st3d dict
 
         '''
@@ -600,11 +600,13 @@ class BladeLayup(object):
         else:
             print('OK.')
 
-    def print_plybook(self, filename='plybook', vmode='stack'):
+    def print_plybook(self, filename='plybook', vmode='stack', include_materials=False):
         ''' Prints a PDF file for layup visualization.
 
         :param filename: name of the PDF
         :param vmode: 'stack' or 'explode' visualization of layup
+        :param include_materials: True if materials should be included (runs only
+                when check_consistency() is OK)
         '''
 
         import matplotlib.pylab as plt
@@ -625,80 +627,83 @@ class BladeLayup(object):
         for i, m in enumerate(self.materials.iterkeys()):
             cm_dict[m] = mat_colors[i]
 
-        # material properties
-        plt.figure()
-        plt.title('MATPROPS')
-        N = 10
-        ind = np.arange(N)    # the x locations for the groups
-        # the width of the bars: can also be len(x) sequence
-        width = 1.0 / N
-        for i, mat_name in enumerate(self.materials.iterkeys()):
-            plt.bar(
-                ind + i * width, self.materials[mat_name].matprops()[0], width,
-                color=cm_dict[mat_name], label=mat_name, log=1)
-            matprops_labels = self.materials[mat_name].matprops()[1]
+        if include_materials:
+            # material properties
+            plt.figure()
+            plt.title('MATPROPS')
+            N = 10
+            ind = np.arange(N)    # the x locations for the groups
+            # the width of the bars: can also be len(x) sequence
+            width = 1.0 / N
+            for i, mat_name in enumerate(self.materials.iterkeys()):
+                plt.bar(
+                    ind + i *
+                    width, self.materials[mat_name].matprops()[0], width,
+                    color=cm_dict[mat_name], label=mat_name, log=1)
+                if i == 1:
+                    matprops_labels = self.materials[mat_name].matprops()[1]
 
-        plt.xticks(ind + .5, matprops_labels)
-        plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
-        pb.savefig()  # save fig to plybook
+            plt.xticks(ind + .5, matprops_labels)
+            plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+            pb.savefig()  # save fig to plybook
 
-        # failmat_stress
-        plt.figure()
-        plt.title('FAILMAT_STRESS')
-        N = 9
-        ind = np.arange(N)    # the x locations for the groups
-        # the width of the bars: can also be len(x) sequence
-        width = 1.0 / N
-        for i, mat_name in enumerate(self.materials.iterkeys()):
-            plt.bar(
-                ind + i * width, self.materials[mat_name].failmat()[0][:N],
-                width,
-                color=cm_dict[mat_name], label=mat_name, log=1)
-            if i == 1:
-                matprops_labels = self.materials[mat_name].failmat()[1]
+            # failmat_stress
+            plt.figure()
+            plt.title('FAILMAT_STRESS')
+            N = 9
+            ind = np.arange(N)    # the x locations for the groups
+            # the width of the bars: can also be len(x) sequence
+            width = 1.0 / N
+            for i, mat_name in enumerate(self.materials.iterkeys()):
+                plt.bar(
+                    ind + i * width, self.materials[mat_name].failmat()[0][:N],
+                    width,
+                    color=cm_dict[mat_name], label=mat_name, log=1)
+                if i == 1:
+                    matprops_labels = self.materials[mat_name].failmat()[1]
 
-        plt.xticks(ind + .5, matprops_labels[:N])
-        plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
-        pb.savefig()  # save fig to plybook
+            plt.xticks(ind + .5, matprops_labels[:N])
+            plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+            pb.savefig()  # save fig to plybook
 
-        # failmat_strain
-        plt.figure()
-        plt.title('FAILMAT_STRAIN')
-        N = 9
-        ind = np.arange(N)    # the x locations for the groups
-        # the width of the bars: can also be len(x) sequence
-        width = 1.0 / N
-        for i, mat_name in enumerate(self.materials.iterkeys()):
-            plt.bar(
-                ind + i *
-                width, self.materials[mat_name].failmat()[0][N:2 * N - 1],
-                width,
-                color=cm_dict[mat_name], label=mat_name)
-            if i == 1:
-                matprops_labels = self.materials[mat_name].failmat()[1]
+            # failmat_strain
+            plt.figure()
+            plt.title('FAILMAT_STRAIN')
+            N = 9
+            ind = np.arange(N)    # the x locations for the groups
+            # the width of the bars: can also be len(x) sequence
+            width = 1.0 / N
+            for i, mat_name in enumerate(self.materials.iterkeys()):
+                plt.bar(
+                    ind + i *
+                    width, self.materials[mat_name].failmat()[0][N:2 * N - 1],
+                    width,
+                    color=cm_dict[mat_name], label=mat_name)
+                if i == 1:
+                    matprops_labels = self.materials[mat_name].failmat()[1]
 
-        plt.xticks(ind + .5, matprops_labels[N:2 * N - 1])
-        plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+            plt.xticks(ind + .5, matprops_labels[N:2 * N - 1])
+            plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
 
-        # failmat_safety
-        plt.figure()
-        plt.title('FAILMAT_SAFETY')
-        N = 9
-        ind = np.arange(N)    # the x locations for the groups
-        # the width of the bars: can also be len(x) sequence
-        width = 1.0 / N
-        for i, mat_name in enumerate(self.materials.iterkeys()):
-            plt.bar(
-                ind + i *
-                width, self.materials[
-                    mat_name].failmat()[0][2 * N - 1:3 * N - 1],
-                width,
-                color=cm_dict[mat_name], label=mat_name)
-            if i == 1:
-                matprops_labels = self.materials[mat_name].failmat()[1]
+            # failmat_safety
+            plt.figure()
+            plt.title('FAILMAT_SAFETY')
+            N = 9
+            ind = np.arange(N)    # the x locations for the groups
+            # the width of the bars: can also be len(x) sequence
+            width = 1.0 / N
+            for i, mat_name in enumerate(self.materials.iterkeys()):
+                plt.bar(
+                    ind + i *
+                    width, self.materials[
+                        mat_name].failmat()[0][2 * N - 1:3 * N - 1],
+                    width,
+                    color=cm_dict[mat_name], label=mat_name)
+                if i == 1:
+                    matprops_labels = self.materials[mat_name].failmat()[1]
 
-        plt.xticks(ind + .5, matprops_labels[2 * N - 1:3 * N - 1])
-        plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+            plt.xticks(ind + .5, matprops_labels[2 * N - 1:3 * N - 1])
+            plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
 
         plt.figure()
         plt.title('DPs')
