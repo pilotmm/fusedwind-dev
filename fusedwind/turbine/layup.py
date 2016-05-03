@@ -1,5 +1,6 @@
 import numpy as np
 from collections import OrderedDict
+import cPickle
 
 
 class Material(object):
@@ -928,3 +929,24 @@ def create_bladestructure(bl):
         st3d['bonds'] = _create_regions(bl.bonds)
 
     return st3d
+
+
+def pickle_bladelayup(bl):
+    ''' pickle a bl object into an ascii file
+
+    :param class: bl
+    :return: List of regions
+    '''
+
+    with open('bl.pkl', 'wb') as mysavedata:
+        cPickle.dump(bl, mysavedata)
+
+
+def unpickle_bladelayup():
+    ''' unpickle a bl object from an ascii file
+
+    :return: class: bl
+    '''
+    with open('bl.pkl', 'rb') as myrestoredata:
+        bl = cPickle.load(myrestoredata)
+    return bl
