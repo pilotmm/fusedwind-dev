@@ -867,6 +867,28 @@ class BladeLayup(object):
         pb.close()  # close plybook
 
 
+def _create_regions(dictionary):
+    ''' create regions list
+
+    :param dictionary: bl.regions or bl.webs or bl.bonds
+    :return: List of regions
+    '''
+    regs = []
+    for k, v in dictionary.iteritems():
+        r = {}
+        r['layers'] = []
+        andata = []
+        thdata = []
+        for k, v in v.layers.iteritems():
+            r['layers'].append(k)
+            thdata.append(v.thickness)
+            andata.append(v.angle)
+        r['thicknesses'] = np.fliplr(np.rot90(np.r_[thdata], -1))
+        r['angles'] = np.fliplr(np.rot90(np.r_[andata], 1))
+        regs.append(r)
+    return regs
+
+
 def create_bladestructure(bl):
     """ Creator for BladeStructureVT3D data from a BladeLayup object
 
@@ -903,27 +925,6 @@ def create_bladestructure(bl):
     for v in bl.DPs.itervalues():
         dpdata.append(v.arc)
     st3d['DPs'] = np.fliplr(np.rot90(np.r_[dpdata], -1))
-
-    def _create_regions(dictionary):
-        ''' create regions list
-
-        :param dictionary: bl.regions or bl.webs or bl.bonds
-        :return: List of regions
-        '''
-        regs = []
-        for k, v in dictionary.iteritems():
-            r = {}
-            r['layers'] = []
-            andata = []
-            thdata = []
-            for k, v in v.layers.iteritems():
-                r['layers'].append(k)
-                thdata.append(v.thickness)
-                andata.append(v.angle)
-            r['thicknesses'] = np.fliplr(np.rot90(np.r_[thdata], -1))
-            r['angles'] = np.fliplr(np.rot90(np.r_[andata], 1))
-            regs.append(r)
-        return regs
 
     st3d['regions'] = _create_regions(bl.regions)
     st3d['webs'] = _create_regions(bl.webs)
