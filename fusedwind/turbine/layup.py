@@ -383,23 +383,29 @@ class Region(object):
         self.layers[lname] = layer
         return layer
 
-    def init_thicknesses(self):
-        ''' Initiates thickness matrix of the region plus the max thickness
-            of each layer
-        :return: thick_matrix: 2d np.array containing thicknesses of all layers (no_layers,s)
+    def init_stack(self):
+        ''' Initiates thickness and angle matrices of the region plus the max
+            thickness of each layer
+        :return: thick_matrix: 2d np.array containing thicknesses of all layers (size: no_layers,s)
         :return: thick_max: 1d np.array max thickness per layer
+        :return: angle_matrix: 2d np.array containing angles of all layers (size: no_layers,s)
         '''
         thickmatdata = []
         for v in self.layers.itervalues():
             thickmatdata.append(v.thickness)
-        self.thick_matrix = np.fliplr(np.rot90(np.r_[thickmatdata], -1))
+        self.thick_matrix = np.fliplr(np.rot90(np.array(thickmatdata), -1))
 
         thickmaxdata = []
         for l in range(self.thick_matrix.shape[1]):
             thickmaxdata.append(np.max(self.thick_matrix[:, l]))
         self.thick_max = np.array(thickmaxdata)
 
-        return self.thick_matrix, self.thick_max
+        anglematdata = []
+        for v in self.layers.itervalues():
+            anglematdata.append(v.angle)
+        self.angle_matrix = np.fliplr(np.rot90(np.array(anglematdata), -1))
+
+        return self.thick_matrix, self.thick_max, self.angle_matrix
 
 
 class BladeLayup(object):
@@ -730,7 +736,7 @@ class BladeLayup(object):
             rmaxthicks = []
             for i, rv in enumerate(reg_type.itervalues()):
                 # init thicknesses
-                rv.init_thicknesses()
+                rv.init_stack()
                 rthicks.append(rv.thick_matrix)
                 rmaxthicks.append(np.sum(rv.thick_max))
             # maximum thickness of sets
