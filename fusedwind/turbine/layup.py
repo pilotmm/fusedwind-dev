@@ -1,10 +1,12 @@
 import numpy as np
 from collections import OrderedDict
+import cPickle
+
 
 class Material(object):
     ''' Defines and handles material input data such as properties, resistances,
     and safety factors.
-    
+
     Properties (Values should be set as mean values from measurements in SI units.)
     ----------
     :param E1: Young's modulus parallel (||) to fiber direction
@@ -22,7 +24,7 @@ class Material(object):
         direction (out of lamina plane)
     :param nu32: minor Poisson's ratio between both out of and in lamina plane fiber
         directions
-        
+
     .. note:: 1st index = loading, 2nd index = contraction
               That is for a uniaxial layer nu12 is the larger (major) and nu21 is the
               smaller (minor) value.
@@ -33,8 +35,8 @@ class Material(object):
     :param rho: Density 
     :param failcrit: Failure criterion to be used for this material ('maximum_strain', 'maximum_stress', 'tsai_wu')
     :type failcrit: string 
-        
-        
+
+
     Resistances:
     -----------
     :param s11_t: allowable tensile stress parallel to fiber direction
@@ -55,7 +57,7 @@ class Material(object):
     :param g12: allowable shear strain in lamina plane
     :param g13: allowable shear strain out of lamina plane, parallel to fiber direction
     :param g23: allowable shear strain out of lamina plane, perpendicular to fiber direction 
-    
+
     Safety Factors according to GL2010 scheme
     -----------------------------------------
     :param gM0: general material safety factor
@@ -64,6 +66,7 @@ class Material(object):
     :param C3a: safety factor for the manufacturing process
     :param C4a: safety factor for the effect of post-curing
     '''
+
     def __init__(self):
         self.E1 = None
         self.E2 = None
@@ -101,27 +104,27 @@ class Material(object):
         self.C2a = None
         self.C3a = None
         self.C4a = None
-    
+
     def _minor_poissons_ratios(self):
         ''' Derives minor Poisson's ratios
         '''
         self.nu31 = self.nu13 * self.E3 / self.E1
         self.nu21 = self.nu12 * self.E2 / self.E1
         self.nu32 = self.nu23 * self.E3 / self.E2
-        
+
     def set_props_iso(self, E1, nu12, rho):
         ''' Sets isotropic material properties.
         '''
         self.rho = rho
         self.E1 = E1
         self.nu12 = nu12
-        
+
         # derived
         self.E2 = self.E1
         self.E3 = self.E1
         self.nu23 = self.nu12
         self.nu13 = self.nu12
-        self.G12 = self.E1 / (2* (1 + self.nu12))
+        self.G12 = self.E1 / (2 * (1 + self.nu12))
         self.G23 = self.G12
         self.G13 = self.G12
         self._minor_poissons_ratios()
@@ -135,14 +138,15 @@ class Material(object):
         self.nu12 = nu12
         self.G12 = G12
         self.nu23 = nu23
-        
+
         # derived
         self.E3 = self.E2
-        self.G23 = self.E2 / (2 * (1 + self.nu23)) # Schuermann, p.202, eq. 8.35
+        # Schuermann, p.202, eq. 8.35
+        self.G23 = self.E2 / (2 * (1 + self.nu23))
         self.nu13 = self.nu12
         self.G13 = self.G12
         self._minor_poissons_ratios()
-        
+
     def set_props(self, E1, E2, E3, nu12, nu13, nu23, G12, G13, G23, rho):
         ''' Set 3D material properties.
         '''
@@ -156,26 +160,40 @@ class Material(object):
         self.G12 = G12
         self.G13 = G13
         self.G23 = G23
-        
+
         self._minor_poissons_ratios()
-        
+
     def matprops(self):
         ''' Returns the list of material properties.
-        
-        :return: A list of material properties suitable for the st3d dict
-        
+
+        :return matprops_list: list of material properties suitable for the st3d
+            dict
+        :return matprops_labels: list of labels used in matprops_list
         '''
-        return [self.E1,
-                 self.E2,
-                 self.E3,
-                 self.nu12,
-                 self.nu13,
-                 self.nu23,
-                 self.G12,
-                 self.G13,
-                 self.G23,
-                 self.rho]
-    
+        matprops_list = [self.E1,
+                         self.E2,
+                         self.E3,
+                         self.nu12,
+                         self.nu13,
+                         self.nu23,
+                         self.G12,
+                         self.G13,
+                         self.G23,
+                         self.rho]
+
+        matprops_labels = ['E1',
+                           'E2',
+                           'E3',
+                           'nu12',
+                           'nu13',
+                           'nu23',
+                           'G12',
+                           'G13',
+                           'G23',
+                           'rho']
+
+        return matprops_list, matprops_labels
+
     def set_resists_strains_iso(self, failcrit, e11_t, e11_c, g12):
         ''' Sets the characteristic allowable strains for an isotropic material.
         '''
@@ -183,7 +201,7 @@ class Material(object):
         self.e11_t = e11_t
         self.e11_c = e11_c
         self.g12 = g12
-        
+
         # derived
         self.e22_t = self.e11_t
         self.e33_t = self.e11_t
@@ -192,7 +210,7 @@ class Material(object):
         self.g13 = self.g12
         self.g23 = self.g12
         self._resists_stresses()
-        
+
     def set_resists_strains_uniax(self, failcrit, e11_t, e22_t, e11_c, e22_c, g12):
         ''' Sets the characteristic allowable strains for a uniax material.
         '''
@@ -202,7 +220,7 @@ class Material(object):
         self.e22_t = e22_t
         self.e22_c = e22_c
         self.g12 = g12
-        
+
         # derived
         self.e33_t = self.e22_t
         self.e33_c = self.e22_c
@@ -224,9 +242,9 @@ class Material(object):
         self.g12 = g12
         self.g13 = g13
         self.g23 = g23
-        
+
         self._resists_stresses()
-        
+
     def _resists_stresses(self):
         ''' Determines stress resistances from strain resistances and stiffnesses
         '''
@@ -239,7 +257,7 @@ class Material(object):
         self.t12 = self.g12 * self.G12
         self.t13 = self.g13 * self.G13
         self.t23 = self.g23 * self.G23
-        
+
     def set_safety_GL2010(self, gM0, C1a, C2a, C3a, C4a):
         ''' Sets the material safety factors.
         '''
@@ -248,48 +266,78 @@ class Material(object):
         self.C2a = C2a
         self.C3a = C3a
         self.C4a = C4a
-        
+
     def failmat(self):
         ''' Returns the list of material resistances and safety factors.
-        
-        :return: A list of resistances and safety factors suitable for the 
-                 st3d dict
+
+        :return failmat_list: list of resistances and safety factors suitable
+            for the st3d dict
+        :return failmat_labels: list of labels used in failmat_list
         '''
-        return [self.s11_t,
-                self.s22_t,
-                self.s33_t,
-                self.s11_c,
-                self.s22_c,
-                self.s33_c,
-                self.t12,
-                self.t13,
-                self.t23,
-                self.e11_c,
-                self.e22_c,
-                self.e33_c,
-                self.e11_t,
-                self.e22_t,
-                self.e33_t,
-                self.g12,
-                self.g13,
-                self.g23,
-                self.gM0,
-                self.C1a,
-                self.C2a,
-                self.C3a,
-                self.C4a]
-        
+        failmat_list = [self.s11_t,
+                        self.s22_t,
+                        self.s33_t,
+                        self.s11_c,
+                        self.s22_c,
+                        self.s33_c,
+                        self.t12,
+                        self.t13,
+                        self.t23,
+                        self.e11_c,
+                        self.e22_c,
+                        self.e33_c,
+                        self.e11_t,
+                        self.e22_t,
+                        self.e33_t,
+                        self.g12,
+                        self.g13,
+                        self.g23,
+                        self.gM0,
+                        self.C1a,
+                        self.C2a,
+                        self.C3a,
+                        self.C4a]
+
+        failmat_labels = ['s11_t',
+                          's22_t',
+                          's33_t',
+                          's11_c',
+                          's22_c',
+                          's33_c',
+                          't12',
+                          't13',
+                          't23',
+                          'e11_c',
+                          'e22_c',
+                          'e33_c',
+                          'e11_t',
+                          'e22_t',
+                          'e33_t',
+                          'g12',
+                          'g13',
+                          'g23',
+                          'gM0',
+                          'C1a',
+                          'C2a',
+                          'C3a',
+                          'C4a']
+
+        return failmat_list, failmat_labels
+
+
 class DivisionPoint(object):
     '''Holds a division point's arc positions on the blade surface.
-    
-    :param arc: arc length positions on airfoil's surface 
+
+    :param arc: arc length positions on airfoil's surface
             -1.0 = trailing edge suction side
             1.0 = trailing edge pressure side
             0.0 = leading edge
-    :type arc: array 
+    :type arc: array
     '''
+
     def __init__(self):
         self.arc = None
+
 
 class Layer(object):
     """ Holds a layer's thickness and angle along the blade.
@@ -298,26 +346,29 @@ class Layer(object):
     :type thickness: array
     :param angle: layup angle (deg)
     :type angle: array
-    
+
     .. note:: A layer thickness can go to zero if material disappears at
               a certain spanwise position.
     """
+
     def __init__(self):
         self.thickness = None
         self.angle = None
 
+
 class Region(object):
     """ Holds a region's layers along the blade.
-    
+
     :param layers: Dictionary of Layer3D objects
     :type layers: dict
     """
+
     def __init__(self):
         self.layers = OrderedDict()
 
     def add_layer(self, name):
         ''' Inserts a layer into layers dict.
-        
+
         :param name: Name of the material
         :return: The layer added to the region
         '''
@@ -327,33 +378,39 @@ class Region(object):
                 dubl += 1
 
         lname = '%s%02d' % (name, dubl)
-        
+
         layer = Layer()
         self.layers[lname] = layer
         return layer
-    
-    def init_thicknesses(self):
-        ''' Initiates thickness matrix of the region plus the max thickness
-            of each layer
-        :return: thick_matrix: 2d np.array containing thicknesses of all layers (no_layers,s)
+
+    def init_stack(self):
+        ''' Initiates thickness and angle matrices of the region plus the max
+            thickness of each layer
+        :return: thick_matrix: 2d np.array containing thicknesses of all layers (size: no_layers,s)
         :return: thick_max: 1d np.array max thickness per layer
+        :return: angle_matrix: 2d np.array containing angles of all layers (size: no_layers,s)
         '''
         thickmatdata = []
         for v in self.layers.itervalues():
-                thickmatdata.append(v.thickness)
-        self.thick_matrix = np.fliplr(np.rot90(np.r_[thickmatdata], -1))
-        
+            thickmatdata.append(v.thickness)
+        self.thick_matrix = np.fliplr(np.rot90(np.array(thickmatdata), -1))
+
         thickmaxdata = []
         for l in range(self.thick_matrix.shape[1]):
-            thickmaxdata.append(np.max(self.thick_matrix[:,l]))
+            thickmaxdata.append(np.max(self.thick_matrix[:, l]))
         self.thick_max = np.array(thickmaxdata)
-        
-        return self.thick_matrix, self.thick_max
-        
-    
+
+        anglematdata = []
+        for v in self.layers.itervalues():
+            anglematdata.append(v.angle)
+        self.angle_matrix = np.fliplr(np.rot90(np.array(anglematdata), -1))
+
+        return self.thick_matrix, self.thick_max, self.angle_matrix
+
+
 class BladeLayup(object):
     """ Span-wise layup definition of a blade.
-    
+
     :param s: Spanwise discretization of the blade's layup
     :type s: array
     :param regions: Dictionary of Region3D objects representing regions on blade
@@ -362,8 +419,9 @@ class BladeLayup(object):
     :param iwebs: DP indices connecting webs to the surface
     :param DPs: Dictionary of DivisionPoint objects
     :param materials: Dictionary of Material objects
-    
+
     """
+
     def __init__(self):
         self.s = None
         self.regions = OrderedDict()
@@ -371,14 +429,14 @@ class BladeLayup(object):
         self.iwebs = None
         self.DPs = OrderedDict()
         self.materials = OrderedDict()
-        
-        self._warns = 0 # counter for inconsistencies
-        
-        self._version = 2 # file version
-    
+
+        self._warns = 0  # counter for inconsistencies
+
+        self._version = 2  # file version
+
     def init_regions(self, nr, names=[]):
         ''' Initialize a number of nr regions.
-        
+
         :param nr: Number of regions to be initialized
         :type nr: integer
         :param names: Names of regions (optional), must have the length of nr
@@ -396,7 +454,7 @@ class BladeLayup(object):
 
     def init_webs(self, nw, iwebs, names=[]):
         ''' Initialize a number of nw webs.
-        
+
         :param nw: Number of webs to be initialized
         :type nw: integer
         :param iwebs: List of DP index pairs connecting a web
@@ -404,7 +462,7 @@ class BladeLayup(object):
             counting) and DP03 (its layup stacking direction is then inwards),
             web01 uses DP01 and DP04
         :param names: Names of webs (optional), must have the length of nw
-        
+
         '''
         self.iwebs = iwebs
         for i in range(nw):
@@ -413,19 +471,19 @@ class BladeLayup(object):
             except:
                 name = 'web%02d' % i
             self._add_web(name)
-            
+
     def init_bonds(self, nb, ibonds, names=[]):
         ''' Initialize a number of nb bondlines.
-        
+
         :param nb: Number of webs to be initialized
         :type nb: integer
         :param ibonds: List of DP index quads connecting a web
-            Example: [[0, 1, -2, -1]] 
+            Example: [[0, 1, -2, -1]]
         :param names: Names of bonds (optional), must have the length of nb
-        
+
         '''
         self.bonds = OrderedDict()
-        #self.ibonds = None
+        # self.ibonds = None
         self.ibonds = ibonds
         for i in range(nb):
             try:
@@ -447,30 +505,30 @@ class BladeLayup(object):
         region = Region()
         self.webs[name] = region
         return region
-    
+
     def _add_bond(self, name):
         ''' Adds bondline to the blade
         '''
         region = Region()
         self.bonds[name] = region
         return region
-    
+
     def add_material(self, name):
         ''' Inserts material into materials dict.
-        
+
         :param name: Name of the material.
         :return: The added material object.
         '''
         material = Material()
         self.materials[name] = material
         return material
-    
+
     def check_consistency(self):
         ''' Checks the consistency of the BladeLayup.
-        
+
         This method compares the length of any vectors in DPs, regions and webs
         with BladeLayup's s length. Further, materials set as layers are checked
-        for their existence in the materials dict. Also initilized objects are 
+        for their existence in the materials dict. Also initilized objects are
         checked if they have unset values.
         '''
         print('Starting consistency check of BladeLayup.')
@@ -479,14 +537,14 @@ class BladeLayup(object):
             if val is None:
                 self._warns += 1
                 print('Attribute %s is not set.') % (attr)
-        
+
         # check material attributes
         for km, vm in self.materials.iteritems():
             for attr, val in vm.__dict__.iteritems():
                 if val is None:
                     self._warns += 1
                     print('%s\'s attribute %s is not set.') % (km, attr)
-            
+
         # calc BladeLayup's s length
         len_s = len(self.s)
         # check DPs
@@ -500,11 +558,12 @@ class BladeLayup(object):
             len_dp = len(dpv.arc)
             if len_dp != len_s:
                 self._warns += 1
-                print('%s\'s size (%s) is unequal to size of s (%s).') % (dpk, len_dp, len_s)
-        
+                print('%s\'s size (%s) is unequal to size of s (%s).') % (
+                    dpk, len_dp, len_s)
+
         def _check_regions(dictionary):
             ''' Check regions' consistency.
-            
+
             :param dictionary: self.regions or self.webs or self.bonds
             '''
             for rk, rv in dictionary.iteritems():
@@ -518,59 +577,55 @@ class BladeLayup(object):
                     for attr, val in lv.__dict__.iteritems():
                         if val is None:
                             self._warns += 1
-                            print('%s\'s %s attribute %s is not set.') % (rk, lk, attr)
+                            print('%s\'s %s attribute %s is not set.') % (
+                                rk, lk, attr)
                     # check if layer's materials exist
                     # note: last two digits comply layer nr.
                     if lk[:-2] not in self.materials.iterkeys():
-                        #if lk not in self.materials.iterkeys():
+                        # if lk not in self.materials.iterkeys():
                         self._warns += 1
-                        print('%s\'s %s does not exist in materials dict.') % (rk, lk[:-2])
+                        print('%s\'s %s does not exist in materials dict.') % (
+                            rk, lk[:-2])
                     # check vector lengths
                     len_thick = len(lv.thickness)
                     len_ang = len(lv.angle)
                     if len_thick != len_s:
                         self._warns += 1
-                        print('%s\'s %s thickness size (%s) is unequal to size of s (%s).') % (rk, lk, len_thick, len_s)
+                        print('%s\'s %s thickness size (%s) is unequal to size of s (%s).') % (
+                            rk, lk, len_thick, len_s)
                     if len_ang != len_s:
                         self._warns += 1
-                        print('%s\'s %s angle size (%s) is unequal to size of s (%s).') % (rk, lk, len_ang, len_s)
-        
+                        print('%s\'s %s angle size (%s) is unequal to size of s (%s).') % (
+                            rk, lk, len_ang, len_s)
+
         # check surface regions and webs
         _check_regions(self.regions)
         _check_regions(self.webs)
         if hasattr(self, 'bonds'):
             _check_regions(self.bonds)
-        
+
         if self._warns:
-            print('%s inconsistencies detected!' % self._warns) 
+            print('%s inconsistencies detected!' % self._warns)
         else:
             print('OK.')
-            
-    def print_plybook(self, filename = 'plybook', vmode = 'stack'):
+
+    def print_plybook(self, filename='plybook', vmode='stack', include_materials=False):
         ''' Prints a PDF file for layup visualization.
-        
+
         :param filename: name of the PDF
         :param vmode: 'stack' or 'explode' visualization of layup
+        :param include_materials: True if materials should be included (runs only
+                when check_consistency() is OK)
         '''
-        
+
         import matplotlib.pylab as plt
         import matplotlib.patches as patches
         from matplotlib.backends.backend_pdf import PdfPages
-        
+
         pb = PdfPages(filename + '.pdf')
-        
+
         cm = plt.get_cmap('jet')
-        
-        plt.figure()
-        plt.title('DPs')   
-        for di, dk in enumerate(sorted(self.DPs, reverse = True)):
-            plt.plot(self.s, self.DPs[dk].arc, label = dk[-2:]) 
-        plt.legend(loc = 'best', prop={'size':6}, bbox_to_anchor=(1, 1))
-        # draw station lines
-        for s in self.s:
-            plt.plot([self.s, self.s], [-1, 1], 'k', linewidth=0.5)
-        pb.savefig() # save fig to plybook
-        
+
         # create material color dict (necessary for the case that materials list
         # is longer than 7)
         start = 0.2
@@ -580,20 +635,108 @@ class BladeLayup(object):
         cm_dict = {}
         for i, m in enumerate(self.materials.iterkeys()):
             cm_dict[m] = mat_colors[i]
-        
+
+        if include_materials:
+            # material properties
+            plt.figure()
+            plt.title('MATPROPS')
+            N = 10
+            ind = np.arange(N)    # the x locations for the groups
+            # the width of the bars: can also be len(x) sequence
+            width = 1.0 / N
+            for i, mat_name in enumerate(self.materials.iterkeys()):
+                plt.bar(
+                    ind + i *
+                    width, self.materials[mat_name].matprops()[0], width,
+                    color=cm_dict[mat_name], label=mat_name, log=1)
+                if i == 1:
+                    matprops_labels = self.materials[mat_name].matprops()[1]
+
+            plt.xticks(ind + .5, matprops_labels)
+            plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+            pb.savefig()  # save fig to plybook
+
+            # failmat_stress
+            plt.figure()
+            plt.title('FAILMAT_STRESS')
+            N = 9
+            ind = np.arange(N)    # the x locations for the groups
+            # the width of the bars: can also be len(x) sequence
+            width = 1.0 / N
+            for i, mat_name in enumerate(self.materials.iterkeys()):
+                plt.bar(
+                    ind + i * width, self.materials[mat_name].failmat()[0][:N],
+                    width,
+                    color=cm_dict[mat_name], label=mat_name, log=1)
+                if i == 1:
+                    matprops_labels = self.materials[mat_name].failmat()[1]
+
+            plt.xticks(ind + .5, matprops_labels[:N])
+            plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+            pb.savefig()  # save fig to plybook
+
+            # failmat_strain
+            plt.figure()
+            plt.title('FAILMAT_STRAIN')
+            N = 9
+            ind = np.arange(N)    # the x locations for the groups
+            # the width of the bars: can also be len(x) sequence
+            width = 1.0 / N
+            for i, mat_name in enumerate(self.materials.iterkeys()):
+                plt.bar(
+                    ind + i *
+                    width, self.materials[mat_name].failmat()[0][N:2 * N - 1],
+                    width,
+                    color=cm_dict[mat_name], label=mat_name)
+                if i == 1:
+                    matprops_labels = self.materials[mat_name].failmat()[1]
+
+            plt.xticks(ind + .5, matprops_labels[N:2 * N - 1])
+            plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+
+            # failmat_safety
+            plt.figure()
+            plt.title('FAILMAT_SAFETY')
+            N = 9
+            ind = np.arange(N)    # the x locations for the groups
+            # the width of the bars: can also be len(x) sequence
+            width = 1.0 / N
+            for i, mat_name in enumerate(self.materials.iterkeys()):
+                plt.bar(
+                    ind + i *
+                    width, self.materials[
+                        mat_name].failmat()[0][2 * N - 1:3 * N - 1],
+                    width,
+                    color=cm_dict[mat_name], label=mat_name)
+                if i == 1:
+                    matprops_labels = self.materials[mat_name].failmat()[1]
+
+            plt.xticks(ind + .5, matprops_labels[2 * N - 1:3 * N - 1])
+            plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+
+        plt.figure()
+        plt.title('DPs')
+        for di, dk in enumerate(sorted(self.DPs, reverse=True)):
+            plt.plot(self.s, self.DPs[dk].arc, label=dk[-2:])
+        plt.legend(loc='best', prop={'size': 6}, bbox_to_anchor=(1, 1))
+        # draw station lines
+        for s in self.s:
+            plt.plot([self.s, self.s], [-1, 1], 'k', linewidth=0.5)
+        pb.savefig()  # save fig to plybook
+
         def _region_sets(reg_type):
             ''' Compares all regions of reg_type and creates a list of unique reg_types
-            
+
             :param reg_type: self.regions or self.webs or self.bonds
             :return: list: unique region sets
             '''
-            
+
             # list of rthicks and region cum thicknesses
             rthicks = []
             rmaxthicks = []
             for i, rv in enumerate(reg_type.itervalues()):
                 # init thicknesses
-                rv.init_thicknesses()
+                rv.init_stack()
                 rthicks.append(rv.thick_matrix)
                 rmaxthicks.append(np.sum(rv.thick_max))
             # maximum thickness of sets
@@ -609,10 +752,10 @@ class BladeLayup(object):
             # remove duplicate entries
             rsets = map(list, OrderedDict.fromkeys(map(tuple, rsets)))
             return rsets, rmaxthick
-        
+
         def _plot_region(rsets, reg_type):
             ''' Adds plots of region sets to plybook
-            
+
             :param rsets: list of region sets
             :param reg_type: self.regions or self.webs or self.bonds
             '''
@@ -622,15 +765,16 @@ class BladeLayup(object):
                 rtype = 'web'
             elif reg_type == self.bonds:
                 rtype = 'bond'
-            
+
             for rset in rsets:
-                r = reg_type['%s%02d' % (rtype,rset[0])] 
+                r = reg_type['%s%02d' % (rtype, rset[0])]
                 fig1 = plt.figure()
                 ax1 = fig1.add_subplot(111)
                 plt.title(rtype.upper() + ' ' + str(rset))
                 # draw station lines
                 for s in self.s:
-                    ax1.plot([self.s, self.s], [0, maxthick], 'k', linewidth=0.5)
+                    ax1.plot(
+                        [self.s, self.s], [0, maxthick], 'k', linewidth=0.5)
                 t = np.zeros_like(self.s)
                 for k, l in r.layers.iteritems():
                     mat_name = k[:-2]
@@ -641,7 +785,7 @@ class BladeLayup(object):
                         # draw layer thickness distro
                         plt.fill_between(self.s, t, t + l.thickness,
                                          color=cm_dict[mat_name],
-                                         label = mat_name if int(mat_count) == 0 else "_nolegend_")
+                                         label=mat_name if int(mat_count) == 0 else "_nolegend_")
                         t = t + l.thickness
                     elif vmode == 'explode':
                         # check for layer drops
@@ -655,50 +799,64 @@ class BladeLayup(object):
                             if drop != drop_prev and drop_prev == 0:
                                 drops.append(s)
                             elif drop != drop_prev and drop_prev == 1:
-                                drops.append(s-1)
+                                drops.append(s - 1)
                             drop_prev = drop
-                        if len(drops) == 1: 
-                            drops.append(len(l.thickness)-1)
+                        if len(drops) == 1:
+                            drops.append(len(l.thickness) - 1)
                         max_thick = np.max(l.thickness)
                         # draw layer box
-                        for di in range(len(drops)-1):
+                        for di in range(len(drops) - 1):
                             # draw box per layer
-                            north_west = [self.s[drops[di]], t[drops[di]] + max_thick]
+                            north_west = [
+                                self.s[drops[di]], t[drops[di]] + max_thick]
                             south_west = [self.s[drops[di]], t[drops[di]]]
-                            north_east = [self.s[drops[di+1]], t[drops[di+1]]+ max_thick]
-                            south_east = [self.s[drops[di+1]], t[drops[di+1]]]
-                            if drops[di] > 0: # we have a plydrop up
-                                north_west = [self.s[drops[di]-1], t[drops[di]] + max_thick]
-                                south_west = [self.s[drops[di]-1], t[drops[di]]]
-                                south_south_west = [self.s[drops[di]], t[drops[di]]]
-                                north_mid_west = [self.s[drops[di]], (t + l.thickness)[drops[di]]]
+                            north_east = [
+                                self.s[drops[di + 1]], t[drops[di + 1]] + max_thick]
+                            south_east = [
+                                self.s[drops[di + 1]], t[drops[di + 1]]]
+                            if drops[di] > 0:  # we have a plydrop up
+                                north_west = [
+                                    self.s[drops[di] - 1], t[drops[di]] + max_thick]
+                                south_west = [
+                                    self.s[drops[di] - 1], t[drops[di]]]
+                                south_south_west = [
+                                    self.s[drops[di]], t[drops[di]]]
+                                north_mid_west = [
+                                    self.s[drops[di]], (t + l.thickness)[drops[di]]]
                                 # draw layer thickness distro drop
                                 ax1.add_patch(patches.Polygon(
-                                    [south_west, north_mid_west, south_south_west],
-                                    linewidth=0,facecolor=cm_dict[mat_name]))
-                            if drops[di+1] < len(self.s)-1: # we have a plydrop down
-                                south_east = [self.s[drops[di+1]+1], t[drops[di+1]]]
-                                north_east = [self.s[drops[di+1]+1], t[drops[di+1]]+ max_thick]
-                                south_south_east = [self.s[drops[di+1]], t[drops[di+1]]]
-                                north_mid_east = [self.s[drops[di+1]], (t + l.thickness)[drops[di+1]]]
+                                    [south_west, north_mid_west,
+                                        south_south_west],
+                                    linewidth=0, facecolor=cm_dict[mat_name]))
+                            # we have a plydrop down
+                            if drops[di + 1] < len(self.s) - 1:
+                                south_east = [
+                                    self.s[drops[di + 1] + 1], t[drops[di + 1]]]
+                                north_east = [
+                                    self.s[drops[di + 1] + 1], t[drops[di + 1]] + max_thick]
+                                south_south_east = [
+                                    self.s[drops[di + 1]], t[drops[di + 1]]]
+                                north_mid_east = [
+                                    self.s[drops[di + 1]], (t + l.thickness)[drops[di + 1]]]
                                 # draw layer thickness distro drop
                                 ax1.add_patch(patches.Polygon(
-                                    [north_mid_east, south_east, south_south_east],
-                                    linewidth=0,facecolor=cm_dict[mat_name]))
+                                    [north_mid_east, south_east,
+                                        south_south_east],
+                                    linewidth=0, facecolor=cm_dict[mat_name]))
                             ax1.add_patch(patches.Polygon(
-                                [south_west, north_west, north_east, south_east],
+                                [south_west, north_west,
+                                    north_east, south_east],
                                 fill=False))
                         # draw layer thickness distro
                         plt.fill_between(self.s, t, t + l.thickness,
-                            where=t < t + l.thickness,
-                            color=cm_dict[mat_name],
-                            label = mat_name if int(mat_count) == 0 else "_nolegend_")
+                                         where=t < t + l.thickness,
+                                         color=cm_dict[mat_name],
+                                         label=mat_name if int(mat_count) == 0 else "_nolegend_")
                         t = t + max_thick
-                plt.ylim([0, maxthick]) # set all plot limits to maxthickness
-                plt.xlim([0, 1])
-                plt.legend(loc = 'best')
-                pb.savefig(fig1) # save fig to plybook
-        
+                plt.ylim([0, maxthick])  # set all plot limits to maxthickness
+                plt.legend(loc='best', prop={'size': 10}, framealpha=0.5)
+                pb.savefig(fig1)  # save fig to plybook
+
         rsets, rmaxthick = _region_sets(self.regions)
         wsets, wmaxthick = _region_sets(self.webs)
         if hasattr(self, 'bonds'):
@@ -706,14 +864,37 @@ class BladeLayup(object):
             maxthick = np.max([rmaxthick, wmaxthick, bmaxthick])
         else:
             maxthick = np.max([rmaxthick, wmaxthick])
-        
-        _plot_region(rsets, reg_type = self.regions)
-        _plot_region(wsets, reg_type = self.webs)
+
+        _plot_region(rsets, reg_type=self.regions)
+        _plot_region(wsets, reg_type=self.webs)
         if hasattr(self, 'bonds'):
-            _plot_region(bsets, reg_type = self.bonds)
-        
-        pb.close() # close plybook
-            
+            _plot_region(bsets, reg_type=self.bonds)
+
+        pb.close()  # close plybook
+
+
+def _create_regions(dictionary):
+    ''' create regions list
+
+    :param dictionary: bl.regions or bl.webs or bl.bonds
+    :return: List of regions
+    '''
+    regs = []
+    for k, v in dictionary.iteritems():
+        r = {}
+        r['layers'] = []
+        andata = []
+        thdata = []
+        for k, v in v.layers.iteritems():
+            r['layers'].append(k)
+            thdata.append(v.thickness)
+            andata.append(v.angle)
+        r['thicknesses'] = np.fliplr(np.rot90(np.r_[thdata], -1))
+        r['angles'] = np.fliplr(np.rot90(np.r_[andata], 1))
+        regs.append(r)
+    return regs
+
+
 def create_bladestructure(bl):
     """ Creator for BladeStructureVT3D data from a BladeLayup object
 
@@ -721,11 +902,11 @@ def create_bladestructure(bl):
     :return: The st3d dictionary containing geometric and material properties
         definition of the blade structure
     """
-    
+
     st3d = {}
-    
+
     st3d['version'] = bl._version
-    
+
     st3d['materials'] = OrderedDict()
     for i, name in enumerate(bl.materials.iterkeys()):
         st3d['materials'][name] = i
@@ -734,47 +915,47 @@ def create_bladestructure(bl):
     failmat = []
     failcrit = []
     for v in bl.materials.itervalues():
-        matprops.append(v.matprops())
-        failmat.append(v.failmat())
+        matprops.append(v.matprops()[0])
+        failmat.append(v.failmat()[0])
         failcrit.append(v.failcrit)
-        
+
     st3d['matprops'] = np.r_[matprops]
-    st3d['failmat'] =  np.r_[failmat]
+    st3d['failmat'] = np.r_[failmat]
     st3d['failcrit'] = failcrit
     st3d['web_def'] = bl.iwebs
     if hasattr(bl, 'bonds'):
         st3d['bond_def'] = bl.ibonds
     st3d['s'] = bl.s
-    
+
     dpdata = []
     for v in bl.DPs.itervalues():
         dpdata.append(v.arc)
     st3d['DPs'] = np.fliplr(np.rot90(np.r_[dpdata], -1))
-    
-    def _create_regions(dictionary):
-        ''' create regions list
-        
-        :param dictionary: bl.regions or bl.webs or bl.bonds
-        :return: List of regions
-        '''
-        regs = []
-        for k, v in dictionary.iteritems():
-            r = {}
-            r['layers'] = []
-            andata = []
-            thdata = []
-            for k, v in v.layers.iteritems():
-                r['layers'].append(k)
-                thdata.append(v.thickness)
-                andata.append(v.angle)
-            r['thicknesses'] = np.fliplr(np.rot90(np.r_[thdata], -1))
-            r['angles'] = np.fliplr(np.rot90(np.r_[andata], 1))
-            regs.append(r)
-        return regs
-    
+
     st3d['regions'] = _create_regions(bl.regions)
     st3d['webs'] = _create_regions(bl.webs)
     if hasattr(bl, 'bonds'):
         st3d['bonds'] = _create_regions(bl.bonds)
-    
+
     return st3d
+
+
+def pickle_bladelayup(bl):
+    ''' pickle a bl object into an ascii file
+
+    :param bl
+    :return: List of regions
+    '''
+
+    with open('bl.pkl', 'wb') as mysavedata:
+        cPickle.dump(bl, mysavedata)
+
+
+def unpickle_bladelayup():
+    ''' unpickle a bl object from an ascii file
+
+    :return: bl
+    '''
+    with open('bl.pkl', 'rb') as myrestoredata:
+        bl = cPickle.load(myrestoredata)
+    return bl
