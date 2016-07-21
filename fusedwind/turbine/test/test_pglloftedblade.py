@@ -48,7 +48,7 @@ class PGLLoftedBladeSurfaceTestCase(unittest.TestCase):
 
         p = configure(cfg)
         p.run()
-        self.assertAlmostEqual(np.sum(p['blade_surface_st']), 775.21809362184081, places=6)
+        self.assertAlmostEqual(np.sum(p['blade_surface_st']), 775.31428100552625, places=6)
 
 if __name__ == '__main__':
 
