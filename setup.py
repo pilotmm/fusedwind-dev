@@ -30,6 +30,7 @@ setup(name='fusedwind',
       packages=[
           'fusedwind',
           'fusedwind.core',
+          'fusedwind.lib',
           'fusedwind.util',
           'fusedwind.test',
           'fusedwind.variables',
