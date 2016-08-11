@@ -57,6 +57,47 @@ class SplineBase(object):
         raise NotImplementedError('A derived class of SplineBase needs to implement a __call__ method')
 
 
+class LinearSpline(SplineBase):
+
+    def initialize(self, x, xp, yp):
+        """
+        params:
+        ----------
+        x: array
+            array with new x-distribution
+        xp: array
+            array with original x-distribution
+        yp: array
+            array with original y-distribution
+
+        returns
+        ---------
+        ynew: array
+            resampled points
+        """
+
+        return self.__call__(x, xp, yp)
+
+    def __call__(self, x, Cx, C):
+        """
+        params:
+        ----------
+        x: array
+            array with new x-distribution
+        xp: array
+            array with x-coordinates of spline control points
+        yp: array
+            array with y-coordinates of spline control points
+
+        returns
+        ---------
+        ynew: array
+            resampled points
+        """
+
+        return np.interp(x, Cx, C)
+
+
 class pchipSpline(SplineBase):
 
     def initialize(self, x, xp, yp):
@@ -143,10 +184,9 @@ class BezierSpline(SplineBase):
         return spl(x)
 
 
-spline_dict = {'pchip': pchipSpline,
+spline_dict = {'linear': LinearSpline,
+               'pchip': pchipSpline,
                'bezier': BezierSpline}
-
-
 
 
 def read_blade_planform(filename):
@@ -427,7 +467,9 @@ class FFDSpline(Component):
         self._name = name
 
         opt = self.spline_options = OptionsDictionary()
-        opt.add_option('spline_type', 'bezier', values=['pchip', 'bezier'],\
+        opt.add_option('spline_type', 'bezier', values=['linear',
+                                                        'pchip',
+                                                        'bezier'],\
                        desc='spline type used in FFD')
         self.nC = Cx.shape[0]
         self.Cx = Cx
