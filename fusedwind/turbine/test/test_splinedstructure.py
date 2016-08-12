@@ -92,10 +92,10 @@ class TestSplinedBladeStructure(unittest.TestCase):
         p['DP04_C'][1] = 0.1
         p.run()
 
-        self.assertEqual(np.testing.assert_array_almost_equal(p['r04uniax00T'], r04uniax, decimal=6), None)
-        self.assertEqual(np.testing.assert_array_almost_equal(p['r04uniax01T'], r04uniax, decimal=6), None)
-        self.assertEqual(np.testing.assert_array_almost_equal(p['w02biax00T'], w02biax, decimal=6), None)
-        self.assertEqual(np.testing.assert_array_almost_equal(p['DP04'], DP04, decimal=6), None)
+        self.assertEqual(np.testing.assert_array_almost_equal(p['r04uniax00T'], r04uniax, decimal=4), None)
+        self.assertEqual(np.testing.assert_array_almost_equal(p['r04uniax01T'], r04uniax, decimal=4), None)
+        self.assertEqual(np.testing.assert_array_almost_equal(p['w02biax00T'], w02biax, decimal=4), None)
+        self.assertEqual(np.testing.assert_array_almost_equal(p['DP04'], DP04, decimal=4), None)
 
     def test_props(self):
 
@@ -116,10 +116,10 @@ class TestSplinedBladeStructure(unittest.TestCase):
         p = configure_with_surface()
         p.run()
 
-        self.assertEqual(np.testing.assert_array_almost_equal(p['r04_width'], r04_width, decimal=6), None)
-        self.assertEqual(np.testing.assert_array_almost_equal(p['r04_thickness'], r04_thickness, decimal=6), None)
-        self.assertEqual(np.testing.assert_array_almost_equal(p['pacc_u'], pacc_u, decimal=6), None)
-        self.assertEqual(np.testing.assert_array_almost_equal(p['web_angle02'], web_angle02, decimal=6), None)
+        self.assertEqual(np.testing.assert_array_almost_equal(p['r04_width'], r04_width, decimal=4), None)
+        self.assertEqual(np.testing.assert_array_almost_equal(p['r04_thickness'], r04_thickness, decimal=4), None)
+        self.assertEqual(np.testing.assert_array_almost_equal(p['pacc_u'], pacc_u, decimal=4), None)
+        self.assertEqual(np.testing.assert_array_almost_equal(p['web_angle02'], web_angle02, decimal=4), None)
 
 if __name__ == '__main__':
 

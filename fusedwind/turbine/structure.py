@@ -1,4 +1,5 @@
 
+import os
 import time
 import re
 import numpy as np
@@ -14,6 +15,9 @@ from collections import OrderedDict
 try:
     from PGL.components.airfoil import AirfoilShape
     from PGL.main.geom_tools import curvature
+    from PGL.main.domain import Domain, Block
+    from PGL.main.planform import rotate_planform
+    from PGL.main.curve import Curve
     _PGL_installed = True
 except:
     print('Warning: PGL not installed, some components will not function correctly')
@@ -60,7 +64,7 @@ def read_bladestructure(filebase):
 
             st3d['version'] = version # version 0 for files before file version tagging
         return version
-    
+
     def _check_bondline(headerline):
         ''' Checks the version string of the first line in file
         :param headerline: Second line if the file.
@@ -107,7 +111,7 @@ def read_bladestructure(filebase):
     dpfid = open(dpfile, 'r')
     first_line = dpfid.readline().split()[1:]
     version = _check_file_version(st3d, first_line)
-    
+
     # read webs and bonds
     if version == 0:
         wnames = first_line
@@ -144,6 +148,30 @@ def read_bladestructure(filebase):
         regions = ['region%02d' % i for i in range(nreg)]
     st3d['s'] = dpdata[:, 0]
     st3d['DPs'] = dpdata[:, 1:]
+
+    # check if a geo3d file containing region param2 input exists
+    pfile = filebase + '.geo3d'
+    if os.path.exists(pfile):
+        pfid = open(pfile, 'r')
+        first_line = pfid.readline().split()[1:]
+        version = _check_file_version(st3d, first_line)
+
+        st3d['struct_angle'] = float(pfid.readline().split()[2])
+        line = pfid.readline().split()[2:]
+        st3d['cap_DPs'] = [int(entry) for entry in line]
+        line = pfid.readline().split()[2:]
+        st3d['te_DPs'] = [int(entry) for entry in line]
+        line = pfid.readline().split()[2:]
+        st3d['le_DPs'] = [int(entry) for entry in line]
+        header = pfid.readline().split()[1:]
+        # ensure that header contains required names
+        assert len(header) >= 7
+        nweb = len(header) - 7
+        data = np.loadtxt(pfid)
+        assert np.allclose(st3d['s'], data[:, 0], rtol=1.e-5)
+        for i, name in enumerate(header[1:]):
+            st3d[name] = data[:, i+1]
+        pfid.close()
 
     # read the st3d files containing thicknesses and orientations
     st3d['regions'] = []
@@ -228,7 +256,7 @@ def read_bladestructure(filebase):
 
         if version >= 1:
             r['layers'] = layers
-        
+
         r['thicknesses'] = cldata[:, 1:nl + 1]
         if cldata.shape[1] == nl*2 + 1:
             r['angles'] = cldata[:, nl + 1:2*nl+1 + 2]
@@ -246,20 +274,20 @@ def read_bladestructure(filebase):
             #version = _check_file_version(st3d, first_line)
             rrname = fid.readline().split()[1]
             lheader = fid.readline().split()[1:]
-    
+
             cldata = np.loadtxt(fid)
             layers = lheader[1:]
             nl = len(layers)
-    
+
             r['layers'] = layers
-            
+
             r['thicknesses'] = cldata[:, 1:nl + 1]
             if cldata.shape[1] == nl*2 + 1:
                 r['angles'] = cldata[:, nl + 1:2*nl+1 + 2]
             else:
                 r['angles'] = np.zeros((cldata.shape[0], nl))
             st3d['bonds'].append(r)
-        
+
     return st3d
 
 
@@ -315,6 +343,26 @@ def write_bladestructure(st3d, filebase):
     data = np.append(data, st3d['DPs'], axis=1)
     np.savetxt(fid, data)
     fid.close()
+
+    # write geo3d file
+    if 'cap_width_lower' in st3d.keys():
+        fid = open(filebase + '.geo3d', 'w')
+        fid.write('# version %s\n' % st3d['version'])
+        fid.write('# struct_angle %24.15f\n' % st3d['struct_angle'])
+        fid.write('# cap_DPs %s\n' % ('  '.join(map(str, st3d['cap_DPs']))))
+        fid.write('# te_DPs %s\n' % ('  '.join(map(str, st3d['te_DPs']))))
+        fid.write('# le_DPs %s\n' % ('  '.join(map(str, st3d['le_DPs']))))
+        header = ['s', 'cap_center_lower',
+                       'cap_center_upper',
+                       'cap_width_lower',
+                       'cap_width_upper',
+                       'te_width',
+                       'le_width']
+        header.extend(['w%02dpos' % i for i in range(1, len(st3d['web_def']))])
+        fid.write('# %s\n' % (' '.join(header)))
+        data = np.array([st3d[name] for name in header]).T
+        np.savetxt(fid, data)
+        fid.close()
 
     # write st3d files with material thicknesses and angles
     for i, reg in enumerate(st3d['regions']):
@@ -386,6 +434,24 @@ def interpolate_bladestructure(st3d, s_new):
     st3dn['failmat'] = st3d['failmat']
     st3dn['failcrit'] = st3d['failcrit']
     st3dn['web_def'] = st3d['web_def']
+    try:
+        st3dn['struct_angle'] = st3d['struct_angle']
+        st3dn['cap_DPs'] = st3d['cap_DPs']
+        st3dn['te_DPs'] = st3d['te_DPs']
+        st3dn['le_DPs'] = st3d['le_DPs']
+        names = ['s', 'cap_center_lower',
+                       'cap_center_upper',
+                       'cap_width_lower',
+                       'cap_width_upper',
+                       'te_width',
+                       'le_width']
+        names.extend(['w%02dpos' % i for i in range(1, len(st3d['web_def']))])
+        for name in names:
+            tck = pchip(sorg, st3d[name])
+            st3dn[name] = tck(s_new)
+    except:
+        print 'no geo3d data'
+
     st3dn['regions'] = []
     st3dn['webs'] = []
     if 'bonds' in st3d:
@@ -444,12 +510,284 @@ def interpolate_bladestructure(st3d, s_new):
             rnew['thicknesses'] = tnew.copy()
             rnew['angles'] = anew.copy()
             st3dn['bonds'].append(rnew)
-        
 
     return st3dn
 
 
-class SplinedBladeStructure(Group):
+class ComputeDPsParam2(object):
+    """
+    Computes the region DPs based on the lofted surface and below
+    listed parameters
+
+    parameters
+    ----------
+    surface: array
+        lofted blade surface
+    le_width: array
+        total width of leading edge panel across leading edge
+        as function of span
+    te_width: array
+        width of trailing edge panels on lower and upper surfaces
+        as function of span
+    cap_center_upper: array
+        upper surface cap center position relative to reference axis
+        as function of span
+    cap_center_lower: array
+        lower surface cap center position relative to reference axis
+        as function of span
+    cap_width_upper: array
+        width of upper spar cap as function of span
+    cap_width_lower: array
+        width of lower spar cap as function of span
+    w<%02d>pos: array
+        Distance between web and cap center.
+        Web attachment DPs are given in the st3d['web_def']
+        dict passed during init.
+    te_DPs: list
+        list of DP indices identifying the trailing edge
+        reinforcement position. list should contain
+        [lower_surface_DP, upper_surface_DP]
+    le_DPs: list
+        list of DP indices identifying the leading edge
+        reinforcement position. list should contain
+        [lower_surface_DP, upper_surface_DP]
+    cap_DPs: list
+        list of DPs identifying the edges of the spar caps.
+        list should be numbered with increasing DP indices,
+        i.e. starting at lower surface rear,
+        ending at upper surface rear.
+
+    returns
+    -------
+    DPs: array
+        Division points as function of span, size ((10, ni))
+    """
+
+    def __init__(self, st3d, **kwargs):
+
+        self.x = np.array([])
+        self.y = np.array([])
+        self.z = np.array([])
+        self.surface = np.array([])
+        # try:
+        self.web_def = st3d['web_def']
+        self.DPs = st3d['DPs']
+        self.s = st3d['s']
+        self.te_DPs = st3d['te_DPs']
+        self.le_DPs = st3d['le_DPs']
+        self.cap_DPs = st3d['cap_DPs']
+        self.le_width = st3d['le_width']
+        self.te_width = st3d['te_width']
+        self.cap_width_upper = st3d['cap_width_upper']
+        self.cap_width_lower = st3d['cap_width_lower']
+        self.cap_center_upper = st3d['cap_center_upper']
+        self.cap_center_lower = st3d['cap_center_lower']
+        self.struct_angle = st3d['struct_angle']
+        print 'struct_angle init', self.struct_angle
+        for i, web_ix in enumerate(self.web_def[1:]):
+            name = 'w%02dpos' % (i+1)
+            setattr(self, name, st3d[name])
+        # except:
+        #     self.te_DPs = []
+        #     self.le_DPs = []
+        #     self.cap_DPs = []
+        #     self.le_width = np.array([])
+        #     self.te_width = np.array([])
+        #     self.cap_width_upper = np.array([])
+        #     self.cap_width_lower = np.array([])
+        #     self.cap_center_upper = np.array([])
+        #     self.cap_center_lower= np.array([])
+        #     self.struct_angle = 0.
+        #     for i, web_ix in enumerate(self.web_def):
+        #         setattr(self, 'w%02dpos' % i, np.array([]))
+
+        self.dominant_DPs = []
+
+        for k, v in kwargs.iteritems():
+            if hasattr(self, k):
+                setattr(self, k, v)
+            else:
+                print 'unknown key %s' % k
+
+    def compute(self):
+
+        print 'struct_angle', self.struct_angle
+
+        self.ni = self.surface.shape[1]
+
+        self.dom = Domain()
+        self.dom.add_blocks(Block(self.surface[:, :, 0],
+                                  self.surface[:, :, 1],
+                                  self.surface[:, :, 2]))
+        surforg = self.dom.blocks['block']._block2arr()[:, :, 0, :].copy()
+        self.dom.rotate_z(self.struct_angle)
+        x = np.interp(self.z, np.linspace(0, 1, self.ni),
+                              np.linspace(self.x[0], self.x[-1], self.ni))
+        y = np.interp(self.z, np.linspace(0, 1, self.ni),
+                              np.linspace(self.y[0], self.y[-1], self.ni))
+        self.pitch_axis = Curve(points=np.array([x, y, self.z]).T)
+        self.pitch_axis.rotate_z(self.struct_angle)
+
+        surf = self.dom.blocks['block']._block2arr()[:, :, 0, :].copy()
+
+        self.afsorg = []
+        for i in range(surforg.shape[1]):
+            self.afsorg.append(AirfoilShape(points=surforg[:, i, :]))
+
+        self.afs = []
+        for i in range(surf.shape[1]):
+            self.afs.append(AirfoilShape(points=surf[:, i, :]))
+
+        if len(self.cap_DPs) == 0:
+            raise RuntimeError('cap_DPs not specified')
+        if len(self.le_DPs) == 0:
+            raise RuntimeError('le_DPs not specified')
+        if len(self.te_DPs) == 0:
+            raise RuntimeError('te_DPs not specified')
+
+        if len(self.dominant_DPs) == 0:
+            self.dominant_DPs = self.te_DPs + self.cap_DPs
+
+        DPs = self.DPs
+
+        # trailing edge DPs
+        DPs[:, 0] = -1.
+        DPs[:, -1] = 1.
+
+        # extra TE regions
+        DPs[:, 1] = -0.99
+        DPs[:, -2] = 0.99
+
+        for i in range(self.ni):
+            af = self.afs[i]
+
+            # Leading edge
+            sLE = af.sLE
+            lew = self.le_width[i]
+            w0 = lew / 2. / af.smax
+            s0 = sLE - w0
+            s1 = sLE + w0
+            s0 = -1.0 + s0 / sLE
+            s1 = (s1-sLE) / (1.0-sLE)
+            DPs[i, self.le_DPs[0]] = s0
+            DPs[i, self.le_DPs[1]] = s1
+
+            # lower trailing panel
+            TEp = self.te_width[i]
+            DPs[i, self.te_DPs[0]] = -1. + TEp / (sLE * af.smax)
+            # upper trailing panel
+            DPs[i, self.te_DPs[1]] = 1. - TEp / ((1. - sLE) * af.smax)
+
+        # cap DPs
+        PAx = self.pitch_axis.points[:, 0]
+        for i in range(self.ni):
+            af = self.afs[i]
+            x_ccL = PAx[i] + self.cap_center_lower[i]
+            s_ccL = af.interp_x(x_ccL, 'lower')
+            x_ccU = PAx[i] + self.cap_center_upper[i]
+            s_ccU = af.interp_x(x_ccU, 'upper')
+            cwU = self.cap_width_upper[i] / 2 / af.smax
+            cwL = self.cap_width_lower[i] / 2 / af.smax
+            DPs[i, self.cap_DPs[0]] = af.s_to_11(s_ccL - cwL)
+            DPs[i, self.cap_DPs[1]] = af.s_to_11(s_ccL + cwL)
+            DPs[i, self.cap_DPs[2]] = af.s_to_11(s_ccU - cwU)
+            DPs[i, self.cap_DPs[3]] = af.s_to_11(s_ccU + cwU)
+
+            # web DPs
+            x_cc = PAx[i] + 0.5 * (self.cap_center_lower[i] +
+                                   self.cap_center_upper[i])
+            s_ccL = af.interp_x(x_cc, 'lower')
+            s_ccU = af.interp_x(x_cc, 'upper')
+            for j, web_ix in enumerate(self.web_def[1:]):
+                wacc = getattr(self, 'w%02dpos' % (j+1))[i]
+                # wsp = paw[i] / af.smax
+                swL = af.interp_x(x_cc+wacc, 'lower')
+                swU = af.interp_x(x_cc+wacc, 'upper')
+                DPs[i, web_ix[0]] = af.s_to_11(swL)
+                DPs[i, web_ix[1]] = af.s_to_11(swU)
+
+        # checks to ensure that DPs don't overlap
+        for i in range(self.ni):
+            for j in range(DPs[i, :].shape[0]/2):
+                if self.afs[i].s_to_01(DPs[i, j]) > self.afs[i].sLE:
+                    DPs[i, j] = self.afs[i].s_to_11(self.afs[i].sLE)-0.02
+            for j in range(DPs[i, :].shape[0]/2+1, DPs[i, :].shape[0]):
+                if self.afs[i].s_to_01(DPs[i, j]) < self.afs[i].sLE:
+                    DPs[i, j] = self.afs[i].s_to_11(self.afs[i].sLE)+0.02
+
+        for i in range(self.ni):
+            for j in range(DPs[i, :].shape[0]-1):
+                if np.diff(DPs[i, [j, j+1]]) < 0.:
+                    if j in self.dominant_DPs:
+                        DPs[i, j+1] = DPs[i, j] + 0.01
+                    elif j+1 in self.dominant_DPs:
+                        DPs[i, j] = DPs[i, j+1] - 0.01
+                    else:
+                        mid = 0.5*(DPs[i, j] + DPs[i, j+1])
+                        DPs[i, j] = mid - 0.01
+                        DPs[i, j+1] = mid + 0.01
+
+        # self.DPs = DPs
+
+    def plot(self, isec=None, ifig=1, coordsys='rotor'):
+
+        import matplotlib.pylab as plt
+
+        if coordsys == 'rotor':
+            afs = self.afsorg
+        elif coordsys == 'mold':
+            afs = self.afs
+
+        plt.figure(ifig)
+
+        if isec is not None:
+            ni = [isec]
+        else:
+            ni = range(self.ni)
+
+        self.DPxy = []
+        for i in ni:
+            plt.title('r = %3.3f' % (self.z[i]))
+            af = afs[i]
+            plt.plot(af.points[:, 0], af.points[:, 1], 'b-')
+            DP = np.array([af.interp_s(af.s_to_01(s)) for s in self.DPs[i, :]])
+            self.DPxy.append(DP.copy())
+            for d in DP:
+                plt.plot(d[0], d[1], 'ro')
+            for d in DP[self.cap_DPs, :]:
+                plt.plot(d[0], d[1], 'mo')
+            for web_ix in self.web_def:
+                plt.plot(DP[[web_ix[0], web_ix[1]]][:, 0],
+                         DP[[web_ix[0], web_ix[1]]][:, 1], 'g')
+                # print 'diff', np.arctan(np.diff(DP[[web_ix[0], web_ix[1]]][:, 0]),
+                #                         np.diff(DP[[web_ix[0], web_ix[1]]][:, 1])) * 180. / np.pi
+
+        plt.axis('equal')
+        self.DPxy = np.asarray(self.DPxy)
+
+    def plot_topview(self, coordsys='rotor'):
+
+        import matplotlib.pylab as plt
+
+        if coordsys == 'rotor':
+            afs = self.afsorg
+        elif coordsys == 'mold':
+            afs = self.afs
+
+        plt.figure()
+        DPs = []
+        for i in range(self.ni):
+            af = afs[i]
+            plt.plot(af.points[:, 2], af.points[:, 0])
+            DP = [af.interp_s(af.s_to_01(s)) for s in self.DPs[i, :]]
+            DPs.append(DP)
+            for d in DP:
+                plt.plot(d[2], d[0], 'ro')
+
+        plt.show()
+
+
+class SplinedBladeStructureBase(Group):
     """
     class that adds structural geometry variables to the analysis
     either as splines with user defined control points
@@ -463,7 +801,7 @@ class SplinedBladeStructure(Group):
         st3d: dict
             dictionary with blade structural definition
         """
-        super(SplinedBladeStructure, self).__init__()
+        super(SplinedBladeStructureBase, self).__init__()
 
         self._vars = []
         self._allvars = []
@@ -475,7 +813,7 @@ class SplinedBladeStructure(Group):
         # add materials strength properties array ((18, nmat))
         self.add('failmat_c', IndepVarComp('failmat', st3d['failmat']), promotes=['*'])
 
-    def add_spline(self, name, Cx, spline_type='bezier', scaler=1.):
+    def _add_mat_spline(self, names, Cx, spline_type='bezier', scaler=1.):
         """
         adds a 1D FFDSpline for the given variable
         with user defined spline type and control point locations.
@@ -503,39 +841,12 @@ class SplinedBladeStructure(Group):
         """
 
         st3d = self.st3dinit
-        if isinstance(name, str):
-            names = [name]
-        else:
-            names = name
-        # decode the name
-        if 'DP' in names[0]:
-            tvars = []
-            for name in names:
+        tvars = []
+
+        for name in names:
+            if name.startswith('r') or name.startswith('w') or name.startswith('b'):
+                l_index = None
                 try:
-                    iDP = int(re.match(r"([a-z]+)([0-9]+)", name, re.I).groups()[-1])
-                except:
-                    raise RuntimeError('Variable name %s not understood' % name)
-
-                var = st3d['DPs'][:, iDP]
-                c = self.add(name + '_s', FFDSpline(name, st3d['s'],
-                                                          var,
-                                                          Cx, scaler=scaler),
-                                                          promotes=[name])
-                c.spline_options['spline_type'] = spline_type
-                tvars.append(name)
-            self._vars.extend(tvars)
-
-            # add the IndepVarComp
-            self.add(names[0] + '_c', IndepVarComp(names[0] + '_C', np.zeros(len(Cx))), promotes=['*'])
-            for varname in tvars:
-                self.connect(names[0] + '_C', varname + '_s.' + varname + '_C')
-        else:
-            tvars = []
-
-            for name in names:
-                if name.startswith('r') or name.startswith('w') or name.startswith('b'):
-                    l_index = None
-                    # try:
                     ireg = int(name[1:3])
                     try:
                         split = re.match(r"([a-z]+)([0-9]+)([a-z]+)", name[3:], re.I).groups()
@@ -544,44 +855,51 @@ class SplinedBladeStructure(Group):
                         split = re.match(r"([a-z]+)([a-z]+)", name[3:], re.I).groups()
                     layername = split[0]+split[1]
                     stype = split[-1]
-                    # except:
-                    #     raise RuntimeError('Variable name %s not understood' % name)
-                else:
+                except:
                     raise RuntimeError('Variable name %s not understood' % name)
+            else:
+                raise RuntimeError('Variable name %s not understood' % name)
 
-                if name.startswith('r'):
-                    r = st3d['regions'][ireg]
-                    rname = 'r%02d' % ireg
-                elif name.startswith('w'):
-                    r = st3d['webs'][ireg]
-                    rname = 'w%02d' % ireg
-                elif name.startswith('b'):
-                    r = st3d['bonds'][ireg]
-                    rname = 'b%02d' % ireg
+            if name.startswith('r'):
+                r = st3d['regions'][ireg]
+                rname = 'r%02d' % ireg
+            elif name.startswith('w'):
+                r = st3d['webs'][ireg]
+                rname = 'w%02d' % ireg
+            elif name.startswith('b'):
+                r = st3d['bonds'][ireg]
+                rname = 'b%02d' % ireg
 
-                varname = '%s%s%s' % (rname, layername, stype)
-                ilayer = r['layers'].index(layername)
-                if stype == 'T':
-                    var = r['thicknesses'][:, ilayer]
-                elif stype == 'A':
-                    var = r['angles'][:, ilayer]
-                c = self.add(name + '_s', FFDSpline(name, st3d['s'],
-                                                       var,
-                                                       Cx, scaler=scaler),
-                                                       promotes=[name])
-                c.spline_options['spline_type'] = spline_type
-                tvars.append(name)
+            varname = '%s%s%s' % (rname, layername, stype)
+            ilayer = r['layers'].index(layername)
+            if stype == 'T':
+                var = r['thicknesses'][:, ilayer]
+            elif stype == 'A':
+                var = r['angles'][:, ilayer]
+            c = self.add(name + '_s', FFDSpline(name, st3d['s'],
+                                                   var,
+                                                   Cx, scaler=scaler),
+                                                   promotes=[name])
+            c.spline_options['spline_type'] = spline_type
+            tvars.append(name)
 
-            self._vars.extend(tvars)
-            # finally add the IndepVarComp and make the connections
-            self.add(names[0] + '_c', IndepVarComp(names[0] + '_C', np.zeros(len(Cx))), promotes=['*'])
-            for varname in tvars:
-                self.connect(names[0] + '_C', varname + '_s.' + varname + '_C')
+        self._vars.extend(tvars)
+        # finally add the IndepVarComp and make the connections
+        self.add(names[0] + '_c', IndepVarComp(names[0] + '_C', np.zeros(len(Cx))), promotes=['*'])
+        for varname in tvars:
+            self.connect(names[0] + '_C', varname + '_s.' + varname + '_C')
 
     def configure(self):
+
+        print 'SplinedBladeStructure: No harm done, but configure is depreciated\n' + \
+              'and replaced by pre_setup called automatically by OpenMDAO.\n'+\
+              'Ensure that you have OpenMDAO > v1.7.1 installed'
+
+    def pre_setup(self, problem):
         """
         add IndepVarComp's for all remaining planform variables
         """
+
         st3d = self.st3dinit
 
         for i in range(st3d['DPs'].shape[1]):
@@ -612,6 +930,262 @@ class SplinedBladeStructure(Group):
                         self.add(varname + 'T_c', IndepVarComp(varname + 'T', reg['thicknesses'][:, i]), promotes=['*'])
                     if varname+'A' not in self._vars:
                         self.add(varname + 'A_c', IndepVarComp(varname + 'A', reg['angles'][:, i]), promotes=['*'])
+
+
+class SplinedBladeStructure(SplinedBladeStructureBase):
+    """
+    class that adds structural geometry variables to the analysis
+    either as splines with user defined control points
+    or arrays according to the initial structural data
+    """
+
+    def __init__(self, st3d):
+        """
+        parameters
+        ----------
+        st3d: dict
+            dictionary with blade structural definition
+        """
+        super(SplinedBladeStructure, self).__init__(st3d)
+
+    def add_spline(self, name, Cx, spline_type='bezier', scaler=1.):
+        """
+        adds a 1D FFDSpline for the given variable
+        with user defined spline type and control point locations.
+
+        parameters
+        ----------
+        name: str or tuple
+            name of the variable(s), which should be of the form
+            `r04uniaxT` or `r04uniaxA` for region 4 uniax thickness
+            and angle, respectively. if `name` is a list of names,
+            spline CPs will be grouped.
+        Cx: array
+            spanwise distribution of control points
+        spline_type: str
+            spline type used in FFD, options:
+            | bezier
+            | pchip
+
+        examples
+        --------
+        | name: DP04 results in spline CPs indepvar: DP04_C,
+        | name: r04uniaxT results in spline CPs indepvar: r04uniaxT_C,
+        | name: (r04uniaxT, r04uniax01T) results in spline CPs: r04uniaxT_C
+        which controls both thicknesses as a group.
+        """
+
+        if isinstance(name, str):
+            names = [name]
+        else:
+            names = name
+        # decode the name
+        if 'DP' in names[0]:
+            self._add_DP_spline(names, Cx, spline_type, scaler=1.)
+        else:
+            self._add_mat_spline(names, Cx, spline_type, scaler=1.)
+
+    def _add_DP_spline(self, names, Cx, spline_type='bezier', scaler=1.):
+        """
+        adds a 1D FFDSpline for the given variable
+        with user defined spline type and control point locations.
+
+        parameters
+        ----------
+        name: str or tuple
+            name of the variable(s), which should be of the form
+            `r04uniaxT` or `r04uniaxA` for region 4 uniax thickness
+            and angle, respectively. if `name` is a list of names,
+            spline CPs will be grouped.
+        Cx: array
+            spanwise distribution of control points
+        spline_type: str
+            spline type used in FFD, options:
+            | bezier
+            | pchip
+
+        examples
+        --------
+        | name: DP04 results in spline CPs indepvar: DP04_C,
+        | name: r04uniaxT results in spline CPs indepvar: r04uniaxT_C,
+        | name: (r04uniaxT, r04uniax01T) results in spline CPs: r04uniaxT_C
+        which controls both thicknesses as a group.
+        """
+
+        st3d = self.st3dinit
+
+        tvars = []
+        for name in names:
+            try:
+                iDP = int(re.match(r"([a-z]+)([0-9]+)", name, re.I).groups()[-1])
+            except:
+                raise RuntimeError('Variable name %s not understood' % name)
+
+            var = st3d['DPs'][:, iDP]
+            c = self.add(name + '_s', FFDSpline(name, st3d['s'],
+                                                      var,
+                                                      Cx, scaler=scaler),
+                                                      promotes=[name])
+            c.spline_options['spline_type'] = spline_type
+            tvars.append(name)
+        self._vars.extend(tvars)
+
+        # add the IndepVarComp
+        self.add(names[0] + '_c', IndepVarComp(names[0] + '_C', np.zeros(len(Cx))), promotes=['*'])
+        for varname in tvars:
+            self.connect(names[0] + '_C', varname + '_s.' + varname + '_C')
+
+
+class DPsParam2(Component):
+
+    def __init__(self, st3d, sdim):
+        super(DPsParam2, self).__init__()
+
+        self._DPs = ComputeDPsParam2(st3d)
+
+        size = sdim[1]
+
+        self.add_param('blade_surface_st', np.zeros(sdim))
+        self.add_param('x_st', np.zeros(size))
+        self.add_param('y_st', np.zeros(size))
+        self.add_param('z_st', np.zeros(size))
+        print 'openmdao', st3d['struct_angle']
+        self.add_param('struct_angle', st3d['struct_angle'])
+        self._param2_names = ['cap_width_upper',
+                              'cap_width_lower',
+                              'te_width',
+                              'le_width',
+                              'cap_center_upper',
+                              'cap_center_lower']
+
+        for i in range(len(st3d['web_def'][1:])):
+            self._param2_names.append('w%02dpos' % (i + 1))
+
+        for name in self._param2_names:
+            self.add_param(name, np.zeros(size))
+
+        self.nDP = st3d['DPs'].shape[1]
+        self._vars = []
+        for i in range(self.nDP):
+            name = 'DP%02d' % i
+            self.add_output(name, np.zeros(size))
+            self._vars.append(name)
+
+    def solve_nonlinear(self, params, unknowns, resids):
+
+        self._DPs.x = params['x_st']
+        self._DPs.y = params['y_st']
+        self._DPs.z = params['z_st']
+        self._DPs.surface = params['blade_surface_st']
+        for name in self._param2_names:
+            setattr(self._DPs, name, params[name])
+        print 'run', params['struct_angle']
+        self._DPs.struct_angle = params['struct_angle']
+        self._DPs.compute()
+
+        for i in range(self.nDP):
+            unknowns['DP%02d' % i] = self._DPs.DPs[:, i]
+
+
+class SplinedBladeStructureParam2(SplinedBladeStructureBase):
+    """
+    class that adds structural geometry variables to the analysis
+    either as splines with user defined control points
+    or arrays according to the initial structural data
+    """
+
+    def __init__(self, st3d, sdim):
+        """
+        parameters
+        ----------
+        st3d: dict
+            dictionary with blade structural definition
+        """
+        super(SplinedBladeStructureParam2, self).__init__(st3d)
+
+        nDP = st3d['DPs'].shape[1]
+        self.nsec = st3d['s'].shape[0]
+        promotes = ['blade_surface_st',
+                    'x_st', 'y_st', 'z_st',
+                    'struct_angle']
+        for i in range(nDP):
+            name = 'DP%02d' % i
+            promotes.append(name)
+        self.add('compute_dps', DPsParam2(st3d, sdim), promotes=promotes)
+
+        self._param2_names = self.compute_dps._param2_names
+        # DPsParam2 always outputs DP00, DP01, so add them to
+        self._vars = self.compute_dps._vars
+
+    def add_spline(self, name, Cx, spline_type='bezier', scaler=1.):
+        """
+        adds a 1D FFDSpline for the given variable
+        with user defined spline type and control point locations.
+
+        parameters
+        ----------
+        name: str or tuple
+            name of the variable(s), which should be of the form
+            `r04uniaxT` or `r04uniaxA` for region 4 uniax thickness
+            and angle, respectively. if `name` is a list of names,
+            spline CPs will be grouped.
+        Cx: array
+            spanwise distribution of control points
+        spline_type: str
+            spline type used in FFD, options:
+            | bezier
+            | pchip
+
+        examples
+        --------
+        | name: DP04 results in spline CPs indepvar: DP04_C,
+        | name: r04uniaxT results in spline CPs indepvar: r04uniaxT_C,
+        | name: (r04uniaxT, r04uniax01T) results in spline CPs: r04uniaxT_C
+        which controls both thicknesses as a group.
+        """
+
+        if isinstance(name, str):
+            names = [name]
+        else:
+            names = name
+        # decode the name
+        if names[0] in self._param2_names:
+            self._add_param2_spline(names, Cx, spline_type, scaler=1.)
+        else:
+            self._add_mat_spline(names, Cx, spline_type, scaler=1.)
+
+    def _add_param2_spline(self, names, Cx, spline_type='bezier', scaler=1.):
+
+        st3d = self.st3dinit
+        tvars = []
+        for name in names:
+            var = st3d[name]
+            c = self.add(name + '_s', FFDSpline(name, st3d['s'],
+                                                      var,
+                                                      Cx, scaler=scaler),
+                                                      promotes=[name])
+            c.spline_options['spline_type'] = spline_type
+            tvars.append(name)
+        self._vars.extend(tvars)
+
+        # add the IndepVarComp
+        self.add(names[0] + '_c', IndepVarComp(names[0] + '_C', np.zeros(len(Cx))), promotes=['*'])
+        for varname in tvars:
+            self.connect(names[0] + '_C', varname + '_s.' + varname + '_C')
+            self.connect(varname, 'compute_dps.%s' % varname)
+
+    def pre_setup(self, problem):
+
+        self.add('struct_angle_c', IndepVarComp('struct_angle',
+                                                self.st3dinit['struct_angle']),
+                                                promotes=['*'])
+
+        for varname in self._param2_names:
+            if varname not in self._vars:
+                var = self.st3dinit[varname]
+                self.add(varname + '_c', IndepVarComp(varname, var), promotes=['*'])
+                self.connect(varname, 'compute_dps.%s' % varname)
+        super(SplinedBladeStructureParam2, self).pre_setup(problem)
 
 
 class BladeStructureProperties(Component):
