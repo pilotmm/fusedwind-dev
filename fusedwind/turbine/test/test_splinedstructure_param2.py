@@ -52,7 +52,6 @@ def configure_with_surface():
     spl.add_spline(('cap_width_upper',
                     'cap_width_lower'),
                     np.linspace(0, 1, 4), spline_type='linear')
-    spl.configure()
     p.setup()
     for k, v in pf.iteritems():
         if k+'_st' in p.root.blade_surf.params.keys():
@@ -80,6 +79,6 @@ class TestSplinedBladeStructure(unittest.TestCase):
                                                               decimal=6), None)
 if __name__ == '__main__':
 
-    unittest.main()
-    # p = configure_with_surface()
-    # p.run()
+    # unittest.main()
+    p = configure_with_surface()
+    p.run()

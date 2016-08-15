@@ -38,7 +38,6 @@ def configure(spline_type):
     spl = p.root.add('pf_splines', SplinedBladePlanform(pf), promotes=['*'])
     for name in ['x', 'chord', 'rot_z', 'rthick']:
         spl.add_spline(name, np.array([0, 0.25, 0.75, 1.]), spline_type=spline_type)
-    spl.configure()
     p.setup()
     return p
 

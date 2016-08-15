@@ -29,7 +29,6 @@ def configure():
     spl.add_spline(('DP04', 'DP05'), np.linspace(0, 1, 4), spline_type='bezier')
     spl.add_spline(('r04uniax00T', 'r04uniax01T'), np.linspace(0, 1, 4), spline_type='bezier')
     spl.add_spline('w02biax00T', np.linspace(0, 1, 4), spline_type='bezier')
-    spl.configure()
     p.setup()
     return p
 
@@ -63,7 +62,6 @@ def configure_with_surface():
     spl.add_spline('DP04', np.linspace(0, 1, 4), spline_type='bezier')
     spl.add_spline(('r04uniax00T', 'r04uniax01T'), np.linspace(0, 1, 4), spline_type='bezier')
     spl.add_spline('w02biax00T', np.linspace(0, 1, 4), spline_type='bezier')
-    spl.configure()
     p.root.add('st_props', BladeStructureProperties((200, nsec, 3), st3dn, [4,5,8,9]), promotes=['*'])
 
     p.setup()

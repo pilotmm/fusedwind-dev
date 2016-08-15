@@ -655,6 +655,12 @@ class SplinedBladePlanform(Group):
             c.spline_options['spline_type'] = spline_type
 
     def configure(self):
+
+        print 'SplinedBladePlanform: No harm done, but configure is depreciated\n' + \
+              'and replaced by pre_setup called automatically by OpenMDAO.\n'+\
+              'Ensure that you have OpenMDAO > v1.7.1 installed'
+
+    def pre_setup(self, problem):
         """
         add IndepVarComp's for all remaining planform variables
         """
