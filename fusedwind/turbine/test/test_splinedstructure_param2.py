@@ -79,6 +79,6 @@ class TestSplinedBladeStructure(unittest.TestCase):
                                                               decimal=6), None)
 if __name__ == '__main__':
 
-    # unittest.main()
-    p = configure_with_surface()
-    p.run()
+    unittest.main()
+    # p = configure_with_surface()
+    # p.run()
