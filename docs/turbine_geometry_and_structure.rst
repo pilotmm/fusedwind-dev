@@ -213,3 +213,50 @@ The data (not shown below) contains in column 1, the running length along the bl
     :align: center
 
     Blade spar cap uniax thickness pertubation.
+
+
+Geometric Blade Structure Parameterisation
+++++++++++++++++++++++++++++++++++++++++++
+
+In addition to the parameterisation described above that uses a flexible and
+normalized approach, a more intuitive parameterisation based on the lofted geometry
+is available in FUSED-Wind.
+This allows the user to place the spar caps, webs, leading and trailing edge
+reinforments relative to a reference plane, making it easy to generate a new
+structural geometry from scratch.
+
+In addition to the structural input files described above, an input file
+with extension `.geo3d` can be provided.
+An example of the header of this file is shown below:
+
+.. literalinclude:: ../fusedwind/turbine/test/data_version_2/Param2_10MW.geo3d
+   :lines: 1-6
+
+Starting from the bottom line, the primary parameters describing the structural
+geometry are:
+
+* *cap_center_lower*, *cap_center_upper*: Lower and upper spar cap centers relative
+reference plane.
+
+* *cap_width_lower*, *cap_width_upper*: Lower and upper spar cap widths
+
+* *te_width*, *le_width*: Trailing and leading edge reinforcement widths (le_width spans across the leading edge).
+
+* *w01pos*, *w02pos*, *w03pos*: web positions relative to reference plane.
+
+The parameters *le_DPs*, *te_DPs*, and *cap_DPs* indicate the DP indices that constitute
+the trailing edge and leading edge reinforcement regions, and the two spar caps.
+Finally, the *struct_angle* is the angle between the reference plane and the rotor
+plane, defined positive nose up.
+
+The schematic below shows a blade cross section with the above quantities.
+The reference plane that the caps and webs are placed relative to is a vertical plane
+starting at the blade root, ending at the blade tip.
+
+.. _bladestructure_spline-fig:
+
+.. figure:: /images/param2_schematic.png
+    :width: 80 %
+    :align: center
+
+    Schematic showing the geometric parameterisation of the blade structure.
