@@ -16,7 +16,6 @@ try:
     from PGL.components.airfoil import AirfoilShape
     from PGL.main.geom_tools import curvature
     from PGL.main.domain import Domain, Block
-    from PGL.main.planform import rotate_planform
     from PGL.main.curve import Curve
     _PGL_installed = True
 except:
