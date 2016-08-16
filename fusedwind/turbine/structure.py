@@ -344,17 +344,17 @@ def write_bladestructure(st3d, filebase):
     fid.close()
 
     # write geo3d file
-    if 'cap_width_lower' in st3d.keys():
+    if 'cap_width_ps' in st3d.keys():
         fid = open(filebase + '.geo3d', 'w')
         fid.write('# version %s\n' % st3d['version'])
         fid.write('# struct_angle %24.15f\n' % st3d['struct_angle'])
         fid.write('# cap_DPs %s\n' % ('  '.join(map(str, st3d['cap_DPs']))))
         fid.write('# te_DPs %s\n' % ('  '.join(map(str, st3d['te_DPs']))))
         fid.write('# le_DPs %s\n' % ('  '.join(map(str, st3d['le_DPs']))))
-        header = ['s', 'cap_center_lower',
-                       'cap_center_upper',
-                       'cap_width_lower',
-                       'cap_width_upper',
+        header = ['s', 'cap_center_ps',
+                       'cap_center_ss',
+                       'cap_width_ps',
+                       'cap_width_ss',
                        'te_width',
                        'le_width']
         header.extend(['w%02dpos' % i for i in range(1, len(st3d['web_def']))])
@@ -438,10 +438,10 @@ def interpolate_bladestructure(st3d, s_new):
         st3dn['cap_DPs'] = st3d['cap_DPs']
         st3dn['te_DPs'] = st3d['te_DPs']
         st3dn['le_DPs'] = st3d['le_DPs']
-        names = ['s', 'cap_center_lower',
-                       'cap_center_upper',
-                       'cap_width_lower',
-                       'cap_width_upper',
+        names = ['s', 'cap_center_ps',
+                       'cap_center_ss',
+                       'cap_width_ps',
+                       'cap_width_ss',
                        'te_width',
                        'le_width']
         names.extend(['w%02dpos' % i for i in range(1, len(st3d['web_def']))])
@@ -528,15 +528,15 @@ class ComputeDPsParam2(object):
     te_width: array
         width of trailing edge panels on lower and upper surfaces
         as function of span
-    cap_center_upper: array
+    cap_center_ss: array
         upper surface cap center position relative to reference axis
         as function of span
-    cap_center_lower: array
+    cap_center_ps: array
         lower surface cap center position relative to reference axis
         as function of span
-    cap_width_upper: array
+    cap_width_ss: array
         width of upper spar cap as function of span
-    cap_width_lower: array
+    cap_width_ps: array
         width of lower spar cap as function of span
     w<%02d>pos: array
         Distance between web and cap center.
@@ -562,43 +562,53 @@ class ComputeDPsParam2(object):
         Division points as function of span, size ((10, ni))
     """
 
-    def __init__(self, st3d, **kwargs):
+    def __init__(self, st3d=None, **kwargs):
+        """
+        Parameters
+        ----------
+        st3d: dict
+            blade structure definition (optional)
+        kwargs: args
+            init arguments to optionally set the class variables
+        """
 
         self.x = np.array([])
         self.y = np.array([])
         self.z = np.array([])
         self.surface = np.array([])
-        # try:
-        self.web_def = st3d['web_def']
-        self.DPs = st3d['DPs']
-        self.s = st3d['s']
-        self.te_DPs = st3d['te_DPs']
-        self.le_DPs = st3d['le_DPs']
-        self.cap_DPs = st3d['cap_DPs']
-        self.le_width = st3d['le_width']
-        self.te_width = st3d['te_width']
-        self.cap_width_upper = st3d['cap_width_upper']
-        self.cap_width_lower = st3d['cap_width_lower']
-        self.cap_center_upper = st3d['cap_center_upper']
-        self.cap_center_lower = st3d['cap_center_lower']
-        self.struct_angle = st3d['struct_angle']
-        print 'struct_angle init', self.struct_angle
-        for i, web_ix in enumerate(self.web_def[1:]):
-            name = 'w%02dpos' % (i+1)
-            setattr(self, name, st3d[name])
-        # except:
-        #     self.te_DPs = []
-        #     self.le_DPs = []
-        #     self.cap_DPs = []
-        #     self.le_width = np.array([])
-        #     self.te_width = np.array([])
-        #     self.cap_width_upper = np.array([])
-        #     self.cap_width_lower = np.array([])
-        #     self.cap_center_upper = np.array([])
-        #     self.cap_center_lower= np.array([])
-        #     self.struct_angle = 0.
-        #     for i, web_ix in enumerate(self.web_def):
-        #         setattr(self, 'w%02dpos' % i, np.array([]))
+        try:
+            self.web_def = st3d['web_def']
+            self.DPs = st3d['DPs']
+            self.s = st3d['s']
+            self.te_DPs = st3d['te_DPs']
+            self.le_DPs = st3d['le_DPs']
+            self.cap_DPs = st3d['cap_DPs']
+            self.le_width = st3d['le_width']
+            self.te_width = st3d['te_width']
+            self.cap_width_ss = st3d['cap_width_ss']
+            self.cap_width_ps = st3d['cap_width_ps']
+            self.cap_center_ss = st3d['cap_center_ss']
+            self.cap_center_ps = st3d['cap_center_ps']
+            self.struct_angle = st3d['struct_angle']
+            for i, web_ix in enumerate(self.web_def[1:]):
+                name = 'w%02dpos' % (i+1)
+                setattr(self, name, st3d[name])
+        except:
+            self.web_def = []
+            self.DPs = np.array([])
+            self.s = np.array([])
+            self.te_DPs = []
+            self.le_DPs = []
+            self.cap_DPs = []
+            self.le_width = np.array([])
+            self.te_width = np.array([])
+            self.cap_width_ss = np.array([])
+            self.cap_width_ps = np.array([])
+            self.cap_center_ss = np.array([])
+            self.cap_center_ps = np.array([])
+            self.struct_angle = 0.
+            for i, web_ix in enumerate(self.web_def):
+                setattr(self, 'w%02dpos' % i, np.array([]))
 
         self.dominant_DPs = []
 
@@ -609,8 +619,6 @@ class ComputeDPsParam2(object):
                 print 'unknown key %s' % k
 
     def compute(self):
-
-        print 'struct_angle', self.struct_angle
 
         self.ni = self.surface.shape[1]
 
@@ -681,20 +689,20 @@ class ComputeDPsParam2(object):
         PAx = self.pitch_axis.points[:, 0]
         for i in range(self.ni):
             af = self.afs[i]
-            x_ccL = PAx[i] + self.cap_center_lower[i]
+            x_ccL = PAx[i] + self.cap_center_ps[i]
             s_ccL = af.interp_x(x_ccL, 'lower')
-            x_ccU = PAx[i] + self.cap_center_upper[i]
+            x_ccU = PAx[i] + self.cap_center_ss[i]
             s_ccU = af.interp_x(x_ccU, 'upper')
-            cwU = self.cap_width_upper[i] / 2 / af.smax
-            cwL = self.cap_width_lower[i] / 2 / af.smax
+            cwU = self.cap_width_ss[i] / 2 / af.smax
+            cwL = self.cap_width_ps[i] / 2 / af.smax
             DPs[i, self.cap_DPs[0]] = af.s_to_11(s_ccL - cwL)
             DPs[i, self.cap_DPs[1]] = af.s_to_11(s_ccL + cwL)
             DPs[i, self.cap_DPs[2]] = af.s_to_11(s_ccU - cwU)
             DPs[i, self.cap_DPs[3]] = af.s_to_11(s_ccU + cwU)
 
             # web DPs
-            x_cc = PAx[i] + 0.5 * (self.cap_center_lower[i] +
-                                   self.cap_center_upper[i])
+            x_cc = PAx[i] + 0.5 * (self.cap_center_ps[i] +
+                                   self.cap_center_ss[i])
             s_ccL = af.interp_x(x_cc, 'lower')
             s_ccU = af.interp_x(x_cc, 'upper')
             for j, web_ix in enumerate(self.web_def[1:]):
@@ -1048,14 +1056,13 @@ class DPsParam2(Component):
         self.add_param('x_st', np.zeros(size))
         self.add_param('y_st', np.zeros(size))
         self.add_param('z_st', np.zeros(size))
-        print 'openmdao', st3d['struct_angle']
         self.add_param('struct_angle', st3d['struct_angle'])
-        self._param2_names = ['cap_width_upper',
-                              'cap_width_lower',
+        self._param2_names = ['cap_width_ss',
+                              'cap_width_ps',
                               'te_width',
                               'le_width',
-                              'cap_center_upper',
-                              'cap_center_lower']
+                              'cap_center_ss',
+                              'cap_center_ps']
 
         for i in range(len(st3d['web_def'][1:])):
             self._param2_names.append('w%02dpos' % (i + 1))
@@ -1078,7 +1085,6 @@ class DPsParam2(Component):
         self._DPs.surface = params['blade_surface_st']
         for name in self._param2_names:
             setattr(self._DPs, name, params[name])
-        print 'run', params['struct_angle']
         self._DPs.struct_angle = params['struct_angle']
         self._DPs.compute()
 
@@ -1213,14 +1219,14 @@ class BladeStructureProperties(Component):
     web_offset%02d: array
         offsets in global coordinate system of connections between
         webs and lower and upper surfaces of OML, respectively
-    pacc_u: array
+    pacc_ss: array
         upper side pitch axis aft cap center in global coordinate system
-    pacc_l: array
+    pacc_ps: array
         lower side pitch axis aft cap center in global coordinate system
-    pacc_u_curv: array
+    pacc_ss_curv: array
         curvature of upper side pitch axis aft cap center in
         global coordinate system
-    pacc_l_curv: array
+    pacc_ps_curv: array
         curvature of lower side pitch axis aft cap center in
         global coordinate system
     """
@@ -1278,10 +1284,10 @@ class BladeStructureProperties(Component):
             self.add_output('web_angle%02d' % i, np.zeros(self.nsec), desc='Web%02d angle' % i)
             self.add_output('web_offset%02d' % i, np.zeros((self.nsec, 2)), desc='Web%02d offset' % i)
 
-        self.add_output('pacc_u', np.zeros((self.nsec, 2)), desc='upper side pitch axis aft cap center')
-        self.add_output('pacc_l', np.zeros((self.nsec, 2)), desc='lower side pitch axis aft cap center')
-        self.add_output('pacc_u_curv', np.zeros(self.nsec), desc='upper side pitch axis aft cap center curvature')
-        self.add_output('pacc_l_curv', np.zeros(self.nsec), desc='lower side pitch axis aft cap center curvature')
+        self.add_output('pacc_ss', np.zeros((self.nsec, 2)), desc='upper side pitch axis aft cap center')
+        self.add_output('pacc_ps', np.zeros((self.nsec, 2)), desc='lower side pitch axis aft cap center')
+        self.add_output('pacc_ss_curv', np.zeros(self.nsec), desc='upper side pitch axis aft cap center curvature')
+        self.add_output('pacc_ps_curv', np.zeros(self.nsec), desc='lower side pitch axis aft cap center curvature')
 
         self.dp_xyz = np.zeros([self.nsec, self.nDP, 3])
         self.dp_s01 = np.zeros([self.nsec, self.nDP])
@@ -1301,14 +1307,14 @@ class BladeStructureProperties(Component):
                 self.dp_xyz[i, j, :] = DPxyz
 
         # upper and lower side pitch axis aft cap center
-        unknowns['pacc_l'][:, :] = (self.dp_xyz[:, self.capDPs[0], [0,1]] + \
+        unknowns['pacc_ps'][:, :] = (self.dp_xyz[:, self.capDPs[0], [0,1]] + \
                                     self.dp_xyz[:, self.capDPs[1], [0,1]]) / 2.
-        unknowns['pacc_u'][:, :] = (self.dp_xyz[:, self.capDPs[2], [0,1]] + \
+        unknowns['pacc_ss'][:, :] = (self.dp_xyz[:, self.capDPs[2], [0,1]] + \
                                     self.dp_xyz[:, self.capDPs[3], [0,1]]) / 2.
 
         # curvatures of region boundary curves
-        unknowns['pacc_l_curv'] = curvature(unknowns['pacc_l'])
-        unknowns['pacc_u_curv'] = curvature(unknowns['pacc_u'])
+        unknowns['pacc_ps_curv'] = curvature(unknowns['pacc_ps'])
+        unknowns['pacc_ss_curv'] = curvature(unknowns['pacc_ss'])
 
         # web angles and offsets relative to rotor plane
         for i, iw in enumerate(self.web_def):

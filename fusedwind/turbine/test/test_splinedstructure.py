@@ -101,7 +101,7 @@ class TestSplinedBladeStructure(unittest.TestCase):
                                    0.06549772,  0.03912888,  0.013     ])
         r04_width = np.array([ 0.01264879,  0.01255458,  0.01049935,  0.00894517,  0.00743887,
                                0.00596788,  0.00448234,  0.00164483])
-        pacc_u = np.array([[ -4.72540562e-06,   3.05060896e-02],
+        pacc_ss = np.array([[ -4.72540562e-06,   3.05060896e-02],
                            [ -5.76655195e-04,   2.24110499e-02],
                            [  4.98821153e-03,   1.01445966e-02],
                            [  4.91489605e-03,   3.40209671e-03],
@@ -116,7 +116,7 @@ class TestSplinedBladeStructure(unittest.TestCase):
 
         self.assertEqual(np.testing.assert_array_almost_equal(p['r04_width'], r04_width, decimal=4), None)
         self.assertEqual(np.testing.assert_array_almost_equal(p['r04_thickness'], r04_thickness, decimal=4), None)
-        self.assertEqual(np.testing.assert_array_almost_equal(p['pacc_u'], pacc_u, decimal=4), None)
+        self.assertEqual(np.testing.assert_array_almost_equal(p['pacc_ss'], pacc_ss, decimal=4), None)
         self.assertEqual(np.testing.assert_array_almost_equal(p['web_angle02'], web_angle02, decimal=4), None)
 
 if __name__ == '__main__':

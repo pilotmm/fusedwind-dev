@@ -235,19 +235,22 @@ An example of the header of this file is shown below:
 Starting from the bottom line, the primary parameters describing the structural
 geometry are:
 
-* *cap_center_lower*, *cap_center_upper*: Lower and upper spar cap centers relative
-reference plane.
+* *cap_center_ps*, *cap_center_ss*: Lower and upper spar cap centers relative to the reference plane. Positive towards trailing edge.
 
-* *cap_width_lower*, *cap_width_upper*: Lower and upper spar cap widths
+* *cap_width_ps*, *cap_width_ss*: Lower and upper spar cap widths measured as surface curve length.
 
-* *te_width*, *le_width*: Trailing and leading edge reinforcement widths (le_width spans across the leading edge).
+* *te_width*, *le_width*: Trailing and leading edge reinforcement widths (le_width spans across the leading edge) measured as surface curve length.
 
-* *w01pos*, *w02pos*, *w03pos*: web positions relative to reference plane.
+* *w01pos*, *w02pos*, *w03pos*: web positions relative to the reference plane. Positive towards trailing edge.
 
-The parameters *le_DPs*, *te_DPs*, and *cap_DPs* indicate the DP indices that constitute
-the trailing edge and leading edge reinforcement regions, and the two spar caps.
-Finally, the *struct_angle* is the angle between the reference plane and the rotor
-plane, defined positive nose up.
+The above quantities are all a function of unit span normalized with the blade length.
+The additional parameters that need to be defined are:
+
+* *le_DPs*: DPs enclosing the leading edge reinforcement.
+* *te_DPs*: DPs enclosing the trailing edge reinforcements.
+* *cap_DPs*: indices that enclose the two spar caps.
+* *struct_angle*: The angle between the reference plane and the rotor
+plane, defined positive nose up. Note that this angle is independent of the aerodynamic twist, and is purely used to place the webs and main laminates.
 
 The schematic below shows a blade cross section with the above quantities.
 The reference plane that the caps and webs are placed relative to is a vertical plane
@@ -256,7 +259,7 @@ starting at the blade root, ending at the blade tip.
 .. _bladestructure_spline-fig:
 
 .. figure:: /images/param2_schematic.png
-    :width: 80 %
+    :width: 100 %
     :align: center
 
     Schematic showing the geometric parameterisation of the blade structure.

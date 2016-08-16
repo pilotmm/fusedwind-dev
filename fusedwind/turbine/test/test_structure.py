@@ -10,8 +10,8 @@ import shutil
 st3d_desired = {}
 st3d_desired['web_def'] = np.array([[-1, 0], [2, -3], [4, -5], [5, -6]])
 st3d_desired['bond_def'] = np.array([[0, 1, -2, -1]])
-st3d_desired['cap_width_lower'] = np.linspace(1.1, 0.8, 20) / 86.366
-st3d_desired['cap_width_lower'][-1] = 0.25 / 86.366
+st3d_desired['cap_width_ps'] = np.linspace(1.1, 0.8, 20) / 86.366
+st3d_desired['cap_width_ps'][-1] = 0.25 / 86.366
 st3d_desired['cap_DPs'] = [4, 7, 10, 13]
 st3d_desired['le_DPs'] = [8, 9]
 st3d_desired['te_DPs'] = [2, 15]
@@ -99,8 +99,8 @@ class StructureTests(unittest.TestCase):
                          st3dn['te_DPs'],
                          st3d_desired['te_DPs']), None)
         self.assertEqual(np.testing.assert_array_equal(
-                         st3dn['cap_width_lower'],
-                         st3d_desired['cap_width_lower']), None)
+                         st3dn['cap_width_ps'],
+                         st3d_desired['cap_width_ps']), None)
         shutil.rmtree(self.test_dir)
 
 if __name__ == '__main__':

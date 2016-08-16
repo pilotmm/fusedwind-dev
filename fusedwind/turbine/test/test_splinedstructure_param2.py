@@ -49,8 +49,8 @@ def configure_with_surface():
                                                     [3, 6, 9, 12]),
                                                     promotes=['*'])
 
-    spl.add_spline(('cap_width_upper',
-                    'cap_width_lower'),
+    spl.add_spline(('cap_width_ss',
+                    'cap_width_ps'),
                     np.linspace(0, 1, 4), spline_type='linear')
     p.setup()
     for k, v in pf.iteritems():
@@ -79,6 +79,6 @@ class TestSplinedBladeStructure(unittest.TestCase):
                                                               decimal=6), None)
 if __name__ == '__main__':
 
-    unittest.main()
-    # p = configure_with_surface()
-    # p.run()
+    # unittest.main()
+    p = configure_with_surface()
+    p.run()
