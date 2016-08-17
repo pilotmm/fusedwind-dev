@@ -701,13 +701,11 @@ class ComputeDPsParam2(object):
             DPs[i, self.cap_DPs[3]] = af.s_to_11(s_ccU + cwU)
 
             # web DPs
-            x_cc = PAx[i] + 0.5 * (self.cap_center_ps[i] +
-                                   self.cap_center_ss[i])
+            x_cc = PAx[i]
             s_ccL = af.interp_x(x_cc, 'lower')
             s_ccU = af.interp_x(x_cc, 'upper')
             for j, web_ix in enumerate(self.web_def[1:]):
                 wacc = getattr(self, 'w%02dpos' % (j+1))[i]
-                # wsp = paw[i] / af.smax
                 swL = af.interp_x(x_cc+wacc, 'lower')
                 swU = af.interp_x(x_cc+wacc, 'upper')
                 DPs[i, web_ix[0]] = af.s_to_11(swL)
@@ -752,13 +750,11 @@ class ComputeDPsParam2(object):
         else:
             ni = range(self.ni)
 
-        self.DPxy = []
         for i in ni:
             plt.title('r = %3.3f' % (self.z[i]))
             af = afs[i]
             plt.plot(af.points[:, 0], af.points[:, 1], 'b-')
             DP = np.array([af.interp_s(af.s_to_01(s)) for s in self.DPs[i, :]])
-            self.DPxy.append(DP.copy())
             for d in DP:
                 plt.plot(d[0], d[1], 'ro')
             for d in DP[self.cap_DPs, :]:
@@ -766,13 +762,11 @@ class ComputeDPsParam2(object):
             for web_ix in self.web_def:
                 plt.plot(DP[[web_ix[0], web_ix[1]]][:, 0],
                          DP[[web_ix[0], web_ix[1]]][:, 1], 'g')
-                # print 'diff', np.arctan(np.diff(DP[[web_ix[0], web_ix[1]]][:, 0]),
-                #                         np.diff(DP[[web_ix[0], web_ix[1]]][:, 1])) * 180. / np.pi
 
         plt.axis('equal')
-        self.DPxy = np.asarray(self.DPxy)
+        plt.show()
 
-    def plot_topview(self, coordsys='rotor'):
+    def plot_topview(self, coordsys='rotor', ifig=None):
 
         import matplotlib.pylab as plt
 
@@ -781,7 +775,7 @@ class ComputeDPsParam2(object):
         elif coordsys == 'mold':
             afs = self.afs
 
-        plt.figure()
+        plt.figure(ifig)
         DPs = []
         for i in range(self.ni):
             af = afs[i]
