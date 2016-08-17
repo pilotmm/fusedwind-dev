@@ -44,7 +44,7 @@ the structural discretisation.
     :end-before: # --- 3
 
 The next step is to define the base airfoils used to generate the lofted blade shape.
-The class :class:`fusedwind.turbine.geometry.PGLLoftedBladeSurface`` provides an OpenMDAO interface to the ``LoftedBladeSurface`` class in `PGL`.
+The class :class:`fusedwind.turbine.geometry.PGLLoftedBladeSurface`` provides an OpenMDAO interface to the ``LoftedBladeSurface`` class in `PGL.
 This class takes several options, which we pass as a dictionary when instantiating the class.
 The base airfoils are automatically redistributed according to the same distribution
 function by PGL, so the base airfoils can be distributed differently.
@@ -263,3 +263,72 @@ starting at the blade root, ending at the blade tip.
     :align: center
 
     Schematic showing the geometric parameterisation of the blade structure.
+
+You can generate the structural geometry either as a pre-processing step to an optimization where you optimize using the `DP` parameterisation, or use this parameterisation directly in an optimization.
+We firstly show how to call the ``ComputeDPsParam2`` class directly, which requires a pre-computed lofted blade surface as well as either an `st3d` dictionary with the structural inputs or that you specify these manually.
+The example is located in ``fusedwind/examples/turbine/blade_struct_param2.py``.
+
+The initial step is to import the necessary Python modules, as well as the classes
+used in this example, which are ``PGL`` for generating the lofted surface,
+and methods and classes from ``fusedwind.turbine.structure``:
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2.py
+    :start-after: # --- 1
+    :end-before: # --- 2
+
+The next step is to generate the lofted surface with PGL.
+You can find more documentation on PGL in the docs of this library;
+here we just use it to make a simple surface using the planform
+definition of the DTU 10MW RWT, and a series of airfoils with different
+relative thicknesses.
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2.py
+    :start-after: # --- 2
+    :end-before: # --- 3
+
+Now we can generate the structural geometry.
+In this example, we read the structural definition from an input file,
+but it is easy to generate it manually and pass directly into the class.
+If you run this example in iPython, you can inspect the st3d object keys,
+where you will see that you can set all the above described structural
+parameters.
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2.py
+    :start-after: # --- 3
+    :end-before: # --- 4
+
+Finally, the ``ComputeDPsParam2`` class provides some basic plot methods
+to inspect the final structure, which are shown in the below figures.
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2.py
+    :start-after: # --- 4
+
+
+.. _bladestructure_param2-tip-fig:
+
+.. figure:: /images/struct_param2_tipview.png
+   :width: 100 %
+   :align: center
+
+   Blade structure generated using the ``ComputeDPsParam2`` class viewed from the tip
+   in the rotor coordinate system.
+
+
+.. _bladestructure_param2-top-fig:
+
+Note that the third shear web is parallel to the main laminate and intersects the
+trailing edge panel at r/R=0.65, where it should stop.
+However, the current parameterisation does not allow for discontinuous DP definitions
+in the spanwise direction, so instead you would have to set the web thickness to zero.
+To avoid overlapping DPs, a check is made for this in the code.
+By default the ``te_DPs` and ``cap_DPs`` are specified as so-called ``dominant_DPs``,
+which means that other DPs are moved to avoid overlap.
+So in the case of the TE web, the web DPs are shifted towards the cap by a default length
+of 2% chord.
+
+.. figure:: /images/struct_param2_topview.png
+     :width: 100 %
+     :align: center
+
+     Blade structure generated using the ``ComputeDPsParam2`` class viewed from the suction side
+     in the rotor coordinate system.
