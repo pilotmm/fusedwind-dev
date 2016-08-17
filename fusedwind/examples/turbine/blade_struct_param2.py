@@ -75,3 +75,19 @@ write_bladestructure(st3d, 'param2_st')
 # simple plots
 st.plot(coordsys='rotor')
 st.plot_topview(coordsys='rotor')
+
+# --- 5 ---
+
+# set the struct_angle to 15 deg
+# and shift the main laminates and webs forward
+
+st.struct_angle = 15.
+st.cap_center_ss = np.linspace(0.5, 0.0, 20) / 86.366
+st.cap_center_ps = np.linspace(0.5, 0.0, 20) / 86.366
+st.w02pos += np.linspace(0.5, 0.0, 20) / 86.366
+st.w03pos += np.linspace(0.5, 0.0, 20) / 86.366
+st.compute()
+
+st.plot(coordsys='rotor', ifig=3, isec=12)
+
+# --- 6 ---

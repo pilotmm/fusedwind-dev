@@ -235,13 +235,13 @@ An example of the header of this file is shown below:
 Starting from the bottom line, the primary parameters describing the structural
 geometry are:
 
-* *cap_center_ps*, *cap_center_ss*: Lower and upper spar cap centers relative to the reference plane. Positive towards trailing edge.
+* *cap_center_ps*, *cap_center_ss*: Lower and upper spar cap centers relative to the reference plane. Positive towards leading edge.
 
 * *cap_width_ps*, *cap_width_ss*: Lower and upper spar cap widths measured as surface curve length.
 
 * *te_width*, *le_width*: Trailing and leading edge reinforcement widths (le_width spans across the leading edge) measured as surface curve length.
 
-* *w01pos*, *w02pos*, *w03pos*: web positions relative to the reference plane. Positive towards trailing edge.
+* *w01pos*, *w02pos*, *w03pos*: web positions relative to the reference plane. Positive towards leading edge.
 
 The above quantities are all a function of unit span normalized with the blade length.
 The additional parameters that need to be defined are:
@@ -302,7 +302,7 @@ to inspect the final structure, which are shown in the below figures.
 
 .. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2.py
     :start-after: # --- 4
-
+    :end-before: # --- 5
 
 .. _bladestructure_param2-tip-fig:
 
@@ -314,7 +314,6 @@ to inspect the final structure, which are shown in the below figures.
    in the rotor coordinate system.
 
 
-.. _bladestructure_param2-top-fig:
 
 Note that the third shear web is parallel to the main laminate and intersects the
 trailing edge panel at r/R=0.65, where it should stop.
@@ -326,9 +325,30 @@ which means that other DPs are moved to avoid overlap.
 So in the case of the TE web, the web DPs are shifted towards the cap by a default length
 of 2% chord.
 
+.. _bladestructure_param2-top-fig:
+
 .. figure:: /images/struct_param2_topview.png
      :width: 100 %
      :align: center
 
      Blade structure generated using the ``ComputeDPsParam2`` class viewed from the suction side
      in the rotor coordinate system.
+
+You can easily modify the inputs manually. Below we shift the main laminates and webs
+forward and set the strucural angle to 15 deg.:
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2.py
+    :start-after: # --- 5
+    :end-before: # --- 6
+
+with the following effect:
+
+
+.. _bladestructure_param2-top-fig:
+
+.. figure:: /images/struct_param2_tipview_struct_angle15.png
+     :width: 100 %
+     :align: center
+
+     Plot of a blade structure with the main laminates moved forward and angled 15 degrees
+     relative to the rotor plane.
