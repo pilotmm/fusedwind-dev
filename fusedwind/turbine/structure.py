@@ -611,6 +611,8 @@ class ComputeDPsParam2(object):
                 setattr(self, 'w%02dpos' % i, np.array([]))
 
         self.dominant_DPs = []
+        self.consistency_check = True
+        self.min_width = 0.
 
         for k, v in kwargs.iteritems():
             if hasattr(self, k):
@@ -711,28 +713,49 @@ class ComputeDPsParam2(object):
                 DPs[i, web_ix[0]] = af.s_to_11(swL)
                 DPs[i, web_ix[1]] = af.s_to_11(swU)
 
-        # checks to ensure that DPs don't overlap
-        for i in range(self.ni):
-            for j in range(DPs[i, :].shape[0]/2):
-                if self.afs[i].s_to_01(DPs[i, j]) > self.afs[i].sLE:
-                    DPs[i, j] = self.afs[i].s_to_11(self.afs[i].sLE)-0.02
-            for j in range(DPs[i, :].shape[0]/2+1, DPs[i, :].shape[0]):
-                if self.afs[i].s_to_01(DPs[i, j]) < self.afs[i].sLE:
-                    DPs[i, j] = self.afs[i].s_to_11(self.afs[i].sLE)+0.02
+        if self.consistency_check == True:
 
+            self.check_consistency()
+
+    def check_consistency(self):
+        """
+        check that there are no negative region widths
+        and that DPs belonging to ps and ss are not
+        on the wrong side of the LE.
+
+        If negative widths are identified either of two things will be done:
+        | 1) for all regular DPs the midpoint between the DPs is
+        identified and the DPs are placed +/- 0.01% curve length
+        to either side of this point.
+        | 2) if one of the DPs is a dominant DP, the neighbour DP will be shifted
+        by 0.02% curve length.
+        """
+
+        DPs = self.DPs
+
+        # check for negative region widths
         for i in range(self.ni):
             for j in range(DPs[i, :].shape[0]-1):
                 if np.diff(DPs[i, [j, j+1]]) < 0.:
                     if j in self.dominant_DPs:
-                        DPs[i, j+1] = DPs[i, j] + 0.01
+                        DPs[i, j+1] = DPs[i, j] + self.min_width
                     elif j+1 in self.dominant_DPs:
-                        DPs[i, j] = DPs[i, j+1] - 0.01
+                        DPs[i, j] = DPs[i, j+1] - self.min_width
                     else:
-                        mid = 0.5*(DPs[i, j] + DPs[i, j+1])
-                        DPs[i, j] = mid - 0.01
-                        DPs[i, j+1] = mid + 0.01
+                        mid = 0.5 * (DPs[i, j] + DPs[i, j+1])
+                        DPs[i, j] = mid - self.min_width
+                        DPs[i, j+1] = mid + self.min_width
 
-        # self.DPs = DPs
+        # check that ps and ss DPs are on the correct sides of the LE
+        ps = range(self.te_DPs[0], self.le_DPs[0])
+        ss = range(self.le_DPs[1], self.te_DPs[1])
+        for i in range(self.ni):
+            for j in ps:
+                if self.afs[i].s_to_01(DPs[i, j]) > self.afs[i].sLE:
+                    DPs[i, j] = self.afs[i].s_to_11(self.afs[i].sLE) - self.min_width
+            for j in ss:
+                if self.afs[i].s_to_01(DPs[i, j]) < self.afs[i].sLE:
+                    DPs[i, j] = self.afs[i].s_to_11(self.afs[i].sLE)  + self.min_width
 
     def plot(self, isec=None, ifig=1, coordsys='rotor'):
 
