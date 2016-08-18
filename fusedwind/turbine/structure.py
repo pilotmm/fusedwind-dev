@@ -778,16 +778,19 @@ class ComputeDPsParam2(object):
             af = afs[i]
             plt.plot(af.points[:, 0], af.points[:, 1], 'b-')
             DP = np.array([af.interp_s(af.s_to_01(s)) for s in self.DPs[i, :]])
+            width = np.diff(self.DPs[i, :])
+            valid = np.ones(DP.shape[0])
+            valid[1:] = width > self.min_width
             for d in DP:
                 plt.plot(d[0], d[1], 'ro')
             for d in DP[self.cap_DPs, :]:
                 plt.plot(d[0], d[1], 'mo')
             for web_ix in self.web_def:
-                plt.plot(DP[[web_ix[0], web_ix[1]]][:, 0],
-                         DP[[web_ix[0], web_ix[1]]][:, 1], 'g')
+                if valid[web_ix].all():
+                    plt.plot(DP[[web_ix[0], web_ix[1]]][:, 0],
+                             DP[[web_ix[0], web_ix[1]]][:, 1], 'g')
 
         plt.axis('equal')
-        plt.show()
 
     def plot_topview(self, coordsys='rotor', ifig=None):
 

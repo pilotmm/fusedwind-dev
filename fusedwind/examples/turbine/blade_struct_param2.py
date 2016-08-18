@@ -8,6 +8,7 @@ structural geometry using PGL and the ComputeDPsParam2 class
 import pkg_resources
 import os
 import numpy as np
+import matplotlib.pylab as plt
 
 from PGL.components.loftedblade import LoftedBladeSurface
 from PGL.main.planform import read_blade_planform, redistribute_planform
@@ -89,5 +90,8 @@ st.w03pos += np.linspace(0.5, 0.0, 20) / 86.366
 st.compute()
 
 st.plot(coordsys='rotor', ifig=3, isec=12)
+st.plot(ifig=3, coordsys='rotor', isec=16)
+plt.show()
+
 
 # --- 6 ---

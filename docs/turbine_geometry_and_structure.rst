@@ -313,17 +313,17 @@ to inspect the final structure, which are shown in the below figures.
    Blade structure generated using the ``ComputeDPsParam2`` class viewed from the tip
    in the rotor coordinate system.
 
-
-
 Note that the third shear web is parallel to the main laminate and intersects the
-trailing edge panel at r/R=0.65, where it should stop.
-However, the current parameterisation does not allow for discontinuous DP definitions
-in the spanwise direction, so instead you would have to set the web thickness to zero.
-To avoid overlapping DPs, a check is made for this in the code.
+trailing edge panel at approximately *r/R*=0.65, where it should stop.
+Although the current parameterisation does not allow for discontinuous DP definitions
+in the spanwise direction, this can be handled by collapsing the web DP onto the trailing edge panel DP.
+However, this requires that the meshing code used has a check for zero thickness
+regions and removes these before meshing.
+If this capability is not available, set the parameter ``min_width`` to something
+greater than zero.
 By default the ``te_DPs` and ``cap_DPs`` are specified as so-called ``dominant_DPs``,
-which means that other DPs are moved to avoid overlap.
-So in the case of the TE web, the web DPs are shifted towards the cap by a default length
-of 2% chord.
+which means that other DPs are moved to avoid negative widths.
+For DPs not part of the ``dominant_DPs`` coliding DPs are moved to the mid-point between the two.
 
 .. _bladestructure_param2-top-fig:
 
@@ -352,3 +352,11 @@ with the following effect:
 
      Plot of a blade structure with the main laminates moved forward and angled 15 degrees
      relative to the rotor plane.
+
+In the above figure, it is also evident that some regions have collapsed to zero
+width on the outer section.
+The leading panels between the spar caps and the leading edge reinforcement have
+been displaced by the spar caps, and the similarly the trailing edge web DPs
+have collapsed onto the trailing edge DPs.
+Note that the plotting functions in ``ComputeDPsParam2`` plots only valid
+regions, although they still exist in the parameterisation.
