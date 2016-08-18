@@ -360,3 +360,23 @@ been displaced by the spar caps, and the similarly the trailing edge web DPs
 have collapsed onto the trailing edge DPs.
 Note that the plotting functions in ``ComputeDPsParam2`` plots only valid
 regions, although they still exist in the parameterisation.
+
+To use the ``ComputeDPsParam2`` class as part of an OpenMDAO workflow,
+wrapper classes are provided in ``fusedwind.turbine.structure``.
+
+The example in ``fusedwind/examples/turbine/blade_struct_param2_workflow.py``
+shows how to set this up with a splined planform and structural geometry,
+and add design variables to control the structural geometry in an
+optimization context.
+In the example, we add splines to the pressure and suction side spar cap width
+inputs, and modify the control points ``cap_width_ss_C`` which controls both splines.
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2_workflow.py
+
+Running the example should produce the following plot showing the increased cap width.
+
+.. figure:: /images/struct_param2_cap_width_C.png
+     :width: 100 %
+     :align: center
+
+     Plot of the spar cap width modified using an FFD Bezier spline.
