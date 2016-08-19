@@ -230,7 +230,7 @@ with extension `.geo3d` can be provided.
 An example of the header of this file is shown below:
 
 .. literalinclude:: ../fusedwind/turbine/test/data_version_2/Param2_10MW.geo3d
-   :lines: 1-6
+   :lines: 1-7
 
 Starting from the bottom line, the primary parameters describing the structural
 geometry are:
@@ -249,6 +249,7 @@ The additional parameters that need to be defined are:
 * *le_DPs*: DPs enclosing the leading edge reinforcement.
 * *te_DPs*: DPs enclosing the trailing edge reinforcements.
 * *cap_DPs*: indices that enclose the two spar caps.
+* *dominant_DPs*: indices of DPs that overwrite colliding DPs
 * *struct_angle*: The angle between the reference plane and the rotor
 plane, defined positive nose up. Note that this angle is independent of the aerodynamic twist, and is purely used to place the webs and main laminates.
 
@@ -321,7 +322,7 @@ However, this requires that the meshing code used has a check for zero thickness
 regions and removes these before meshing.
 If this capability is not available, set the parameter ``min_width`` to something
 greater than zero.
-By default the ``te_DPs` and ``cap_DPs`` are specified as so-called ``dominant_DPs``,
+It is recommended that the ``te_DPs` and ``cap_DPs`` are specified as so-called ``dominant_DPs``,
 which means that other DPs are moved to avoid negative widths.
 For DPs not part of the ``dominant_DPs`` coliding DPs are moved to the mid-point between the two.
 

@@ -103,7 +103,6 @@ def read_bladestructure(filebase):
     data = np.loadtxt(fid)
     st3d['failmat'] = data[:, 1:]
     st3d['failcrit'] = [failcrit[mat] for mat in data[:, 0]]
-
     # read the dp3d file containing region division points
     dpfile = filebase + '.dp3d'
 
@@ -150,6 +149,7 @@ def read_bladestructure(filebase):
 
     # check if a geo3d file containing region param2 input exists
     pfile = filebase + '.geo3d'
+    st3d['dominant_DPs'] = []
     if os.path.exists(pfile):
         pfid = open(pfile, 'r')
         first_line = pfid.readline().split()[1:]
@@ -162,6 +162,8 @@ def read_bladestructure(filebase):
         st3d['te_DPs'] = [int(entry) for entry in line]
         line = pfid.readline().split()[2:]
         st3d['le_DPs'] = [int(entry) for entry in line]
+        line = pfid.readline().split()[2:]
+        st3d['dominant_DPs'] = [int(entry) for entry in line]
         header = pfid.readline().split()[1:]
         # ensure that header contains required names
         assert len(header) >= 7
@@ -351,6 +353,7 @@ def write_bladestructure(st3d, filebase):
         fid.write('# cap_DPs %s\n' % ('  '.join(map(str, st3d['cap_DPs']))))
         fid.write('# te_DPs %s\n' % ('  '.join(map(str, st3d['te_DPs']))))
         fid.write('# le_DPs %s\n' % ('  '.join(map(str, st3d['le_DPs']))))
+        fid.write('# dominant_DPs %s\n' % ('  '.join(map(str, st3d['dominant_DPs']))))
         header = ['s', 'cap_center_ps',
                        'cap_center_ss',
                        'cap_width_ps',
@@ -433,6 +436,7 @@ def interpolate_bladestructure(st3d, s_new):
     st3dn['failmat'] = st3d['failmat']
     st3dn['failcrit'] = st3d['failcrit']
     st3dn['web_def'] = st3d['web_def']
+    st3dn['dominant_DPs'] = st3d['dominant_DPs']
     try:
         st3dn['struct_angle'] = st3d['struct_angle']
         st3dn['cap_DPs'] = st3d['cap_DPs']
@@ -583,6 +587,7 @@ class ComputeDPsParam2(object):
             self.te_DPs = st3d['te_DPs']
             self.le_DPs = st3d['le_DPs']
             self.cap_DPs = st3d['cap_DPs']
+            self.dominant_DPs = st3d['dominant_DPs']
             self.le_width = st3d['le_width']
             self.te_width = st3d['te_width']
             self.cap_width_ss = st3d['cap_width_ss']
@@ -607,10 +612,10 @@ class ComputeDPsParam2(object):
             self.cap_center_ss = np.array([])
             self.cap_center_ps = np.array([])
             self.struct_angle = 0.
+            self.dominant_DPs = []
             for i, web_ix in enumerate(self.web_def):
                 setattr(self, 'w%02dpos' % i, np.array([]))
 
-        self.dominant_DPs = []
         self.consistency_check = True
         self.min_width = 0.
 
