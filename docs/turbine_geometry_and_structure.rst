@@ -249,7 +249,7 @@ The additional parameters that need to be defined are:
 * *le_DPs*: DPs enclosing the leading edge reinforcement.
 * *te_DPs*: DPs enclosing the trailing edge reinforcements.
 * *cap_DPs*: indices that enclose the two spar caps.
-* *dominant_DPs*: indices of DPs that overwrite colliding DPs
+* *dominant_regions*: indices of regions that overwrite colliding regions
 * *struct_angle*: The angle between the reference plane and the rotor
 plane, defined positive nose up. Note that this angle is independent of the aerodynamic twist, and is purely used to place the webs and main laminates.
 
@@ -322,9 +322,9 @@ However, this requires that the meshing code used has a check for zero thickness
 regions and removes these before meshing.
 If this capability is not available, set the parameter ``min_width`` to something
 greater than zero.
-It is recommended that the ``te_DPs` and ``cap_DPs`` are specified as so-called ``dominant_DPs``,
-which means that other DPs are moved to avoid negative widths.
-For DPs not part of the ``dominant_DPs`` coliding DPs are moved to the mid-point between the two.
+It is recommended that the ``te_DPs` and ``cap_DPs`` are specified as so-called ``dominant_regions``,
+which means that other regions are moved to avoid negative widths.
+For regions not part of the ``dominant_regions`` coliding region edges (DPs) are moved to the mid-point between the two.
 
 .. _bladestructure_param2-top-fig:
 

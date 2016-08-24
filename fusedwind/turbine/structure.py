@@ -149,7 +149,10 @@ def read_bladestructure(filebase):
 
     # check if a geo3d file containing region param2 input exists
     pfile = filebase + '.geo3d'
-    st3d['dominant_DPs'] = []
+    st3d['dominant_regions'] = []
+    st3d['cap_DPs'] = []
+    st3d['le_DPs'] = []
+    st3d['te_DPs'] = []
     if os.path.exists(pfile):
         pfid = open(pfile, 'r')
         first_line = pfid.readline().split()[1:]
@@ -163,7 +166,7 @@ def read_bladestructure(filebase):
         line = pfid.readline().split()[2:]
         st3d['le_DPs'] = [int(entry) for entry in line]
         line = pfid.readline().split()[2:]
-        st3d['dominant_DPs'] = [int(entry) for entry in line]
+        st3d['dominant_regions'] = [int(entry) for entry in line]
         header = pfid.readline().split()[1:]
         # ensure that header contains required names
         assert len(header) >= 7
@@ -353,7 +356,7 @@ def write_bladestructure(st3d, filebase):
         fid.write('# cap_DPs %s\n' % ('  '.join(map(str, st3d['cap_DPs']))))
         fid.write('# te_DPs %s\n' % ('  '.join(map(str, st3d['te_DPs']))))
         fid.write('# le_DPs %s\n' % ('  '.join(map(str, st3d['le_DPs']))))
-        fid.write('# dominant_DPs %s\n' % ('  '.join(map(str, st3d['dominant_DPs']))))
+        fid.write('# dominant_regions %s\n' % ('  '.join(map(str, st3d['dominant_regions']))))
         header = ['s', 'cap_center_ps',
                        'cap_center_ss',
                        'cap_width_ps',
@@ -436,7 +439,10 @@ def interpolate_bladestructure(st3d, s_new):
     st3dn['failmat'] = st3d['failmat']
     st3dn['failcrit'] = st3d['failcrit']
     st3dn['web_def'] = st3d['web_def']
-    st3dn['dominant_DPs'] = st3d['dominant_DPs']
+    st3dn['dominant_regions'] = st3d['dominant_regions']
+    st3dn['cap_DPs'] = st3d['cap_DPs']
+    st3dn['le_DPs'] = st3d['le_DPs']
+    st3dn['te_DPs'] = st3d['le_DPs']
     try:
         st3dn['struct_angle'] = st3d['struct_angle']
         st3dn['cap_DPs'] = st3d['cap_DPs']
@@ -587,7 +593,7 @@ class ComputeDPsParam2(object):
             self.te_DPs = st3d['te_DPs']
             self.le_DPs = st3d['le_DPs']
             self.cap_DPs = st3d['cap_DPs']
-            self.dominant_DPs = st3d['dominant_DPs']
+            self.dominant_regions = st3d['dominant_regions']
             self.le_width = st3d['le_width']
             self.te_width = st3d['te_width']
             self.cap_width_ss = st3d['cap_width_ss']
@@ -599,6 +605,7 @@ class ComputeDPsParam2(object):
                 name = 'w%02dpos' % (i+1)
                 setattr(self, name, st3d[name])
         except:
+            print 'failed reading st3d'
             self.web_def = []
             self.DPs = np.array([])
             self.s = np.array([])
@@ -612,7 +619,7 @@ class ComputeDPsParam2(object):
             self.cap_center_ss = np.array([])
             self.cap_center_ps = np.array([])
             self.struct_angle = 0.
-            self.dominant_DPs = []
+            self.dominant_regions = []
             for i, web_ix in enumerate(self.web_def):
                 setattr(self, 'w%02dpos' % i, np.array([]))
 
@@ -658,9 +665,6 @@ class ComputeDPsParam2(object):
             raise RuntimeError('le_DPs not specified')
         if len(self.te_DPs) == 0:
             raise RuntimeError('te_DPs not specified')
-
-        if len(self.dominant_DPs) == 0:
-            self.dominant_DPs = self.te_DPs + self.cap_DPs
 
         DPs = self.DPs
 
@@ -737,23 +741,9 @@ class ComputeDPsParam2(object):
         """
 
         DPs = self.DPs
-
-        # check for negative region widths
-        for i in range(self.ni):
-            for j in range(DPs[i, :].shape[0]-1):
-                if np.diff(DPs[i, [j, j+1]]) < 0.:
-                    if j in self.dominant_DPs:
-                        DPs[i, j+1] = DPs[i, j] + self.min_width
-                    elif j+1 in self.dominant_DPs:
-                        DPs[i, j] = DPs[i, j+1] - self.min_width
-                    else:
-                        mid = 0.5 * (DPs[i, j] + DPs[i, j+1])
-                        DPs[i, j] = mid - self.min_width
-                        DPs[i, j+1] = mid + self.min_width
-
         # check that ps and ss DPs are on the correct sides of the LE
-        ps = range(self.te_DPs[0], self.le_DPs[0])
-        ss = range(self.le_DPs[1], self.te_DPs[1])
+        ps = range(self.te_DPs[0], self.le_DPs[0] + 1)
+        ss = range(self.le_DPs[1], self.te_DPs[1] + 1)
         for i in range(self.ni):
             for j in ps:
                 if self.afs[i].s_to_01(DPs[i, j]) > self.afs[i].sLE:
@@ -761,6 +751,20 @@ class ComputeDPsParam2(object):
             for j in ss:
                 if self.afs[i].s_to_01(DPs[i, j]) < self.afs[i].sLE:
                     DPs[i, j] = self.afs[i].s_to_11(self.afs[i].sLE)  + self.min_width
+
+        # check for negative region widths
+        for i in range(self.ni):
+            for j in range(DPs[i, :].shape[0]-1):
+                k = 1
+                if np.diff(DPs[i, [j, j+k]]) < 0.:
+                    if j in self.dominant_regions and j+k not in self.cap_DPs:
+                        DPs[i, j+k] = DPs[i, j] + self.min_width
+                    elif j+k in self.dominant_regions and j not in self.cap_DPs:
+                        DPs[i, j] = DPs[i, j+k] - self.min_width
+                    else:
+                        mid = 0.5 * (DPs[i, j] + DPs[i, j+k])
+                        DPs[i, j] = mid - self.min_width
+                        DPs[i, j+k] = mid + self.min_width
 
     def plot(self, isec=None, ifig=1, coordsys='rotor'):
 
