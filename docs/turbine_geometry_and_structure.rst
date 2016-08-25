@@ -250,12 +250,9 @@ The additional parameters that need to be defined are:
 * *te_DPs*: DPs enclosing the trailing edge reinforcements.
 * *cap_DPs*: indices that enclose the two spar caps.
 * *dominant_regions*: indices of regions that overwrite colliding regions
-* *struct_angle*: The angle between the reference plane and the rotor
-plane, defined positive nose up. Note that this angle is independent of the aerodynamic twist, and is purely used to place the webs and main laminates.
+* *struct_angle*: The angle relative to the rotor plane that the blade is rotated with before placing the webs vertically, defined positive nose down. Note that this angle is independent of the aerodynamic twist, and is purely used to place the webs and main laminates.
 
 The schematic below shows a blade cross section with the above quantities.
-The reference plane that the caps and webs are placed relative to is a vertical plane
-starting at the blade root, ending at the blade tip.
 
 .. _bladestructure_spline-fig:
 
@@ -264,6 +261,20 @@ starting at the blade root, ending at the blade tip.
     :align: center
 
     Schematic showing the geometric parameterisation of the blade structure.
+
+The reference plane that the caps and webs are placed relative to is a vertical plane
+starting at the blade root, ending at the blade tip.
+This plane will thus be rotated *struct_angle + 90* degrees relative to the rotor plane as shown in the below figure.
+
+
+.. _bladestructure_spline-fig:
+
+.. figure:: /images/struct_param2_rotations.png
+    :width: 100 %
+    :align: center
+
+    Schematic showing the definition of the structural angle *struct_angle*.
+
 
 You can generate the structural geometry either as a pre-processing step to an optimization where you optimize using the `DP` parameterisation, or use this parameterisation directly in an optimization.
 We firstly show how to call the ``ComputeDPsParam2`` class directly, which requires a pre-computed lofted blade surface as well as either an `st3d` dictionary with the structural inputs or that you specify these manually.
@@ -322,9 +333,9 @@ However, this requires that the meshing code used has a check for zero thickness
 regions and removes these before meshing.
 If this capability is not available, set the parameter ``min_width`` to something
 greater than zero.
-It is recommended that the ``te_DPs` and ``cap_DPs`` are specified as so-called ``dominant_regions``,
-which means that other regions are moved to avoid negative widths.
-For regions not part of the ``dominant_regions`` coliding region edges (DPs) are moved to the mid-point between the two.
+It is recommended that the trailing edge reinforcement and cap regions are specified as so-called ``dominant_regions``,
+which means that other regions are displaced by these to avoid negative widths.
+For regions not part of the ``dominant_regions``, colliding region edges (DPs) are moved to the mid-point between the two.
 
 .. _bladestructure_param2-top-fig:
 
