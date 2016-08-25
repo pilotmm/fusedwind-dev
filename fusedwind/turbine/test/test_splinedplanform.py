@@ -10,6 +10,10 @@ from fusedwind.turbine.geometry import SplinedBladePlanform, \
                                        read_blade_planform, \
                                        redistribute_planform
 
+chord_lin = np.array([ 0.06229255,  0.06229298,  0.06369571,  0.06755303,  0.07093679,
+        0.07265079,  0.07471632,  0.07536421,  0.07506142,  0.07423551,
+        0.07305759,  0.07169988,  0.07031913,  0.06902237,  0.06786967,
+        0.05981284,  0.04962839,  0.03965588,  0.02873055,  0.00694712])
 chord_bez = np.array([ 0.06229255,  0.06265925,  0.06494163,  0.069981  ,  0.07472148,
         0.07708992,  0.0774626 ,  0.07638454,  0.07427456,  0.07151453,
         0.0682293 ,  0.06454157,  0.06055236,  0.056303  ,  0.05177262,
@@ -34,7 +38,6 @@ def configure(spline_type):
     spl = p.root.add('pf_splines', SplinedBladePlanform(pf), promotes=['*'])
     for name in ['x', 'chord', 'rot_z', 'rthick']:
         spl.add_spline(name, np.array([0, 0.25, 0.75, 1.]), spline_type=spline_type)
-    spl.configure()
     p.setup()
     return p
 
@@ -57,6 +60,12 @@ class TestSplinedPlanform(unittest.TestCase):
         self.assertEqual(np.testing.assert_array_almost_equal(p['athick'], athick_pchip, decimal=6), None)
         self.assertAlmostEqual(p['blade_curve_length'], 1.0011587264848194, places=6)
 
+    def test_linear(self):
+        p = configure('linear')
+        p['chord_C'][2] = 0.03
+        p.run()
+
+        self.assertEqual(np.testing.assert_array_almost_equal(p['chord'], chord_lin, decimal=6), None)
 
     def test_curve_length(self):
         p = configure('pchip')
@@ -82,7 +91,6 @@ class TestSplinedPlanform(unittest.TestCase):
 if __name__ == '__main__':
 
     unittest.main()
-    # p = configure('pchip')
+    # p = configure('linear')
     # p['chord_C'][2] = 0.03
-    #
     # p.run()

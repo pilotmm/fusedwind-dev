@@ -44,7 +44,7 @@ the structural discretisation.
     :end-before: # --- 3
 
 The next step is to define the base airfoils used to generate the lofted blade shape.
-The class :class:`fusedwind.turbine.geometry.PGLLoftedBladeSurface`` provides an OpenMDAO interface to the ``LoftedBladeSurface`` class in `PGL`.
+The class :class:`fusedwind.turbine.geometry.PGLLoftedBladeSurface`` provides an OpenMDAO interface to the ``LoftedBladeSurface`` class in `PGL.
 This class takes several options, which we pass as a dictionary when instantiating the class.
 The base airfoils are automatically redistributed according to the same distribution
 function by PGL, so the base airfoils can be distributed differently.
@@ -213,3 +213,182 @@ The data (not shown below) contains in column 1, the running length along the bl
     :align: center
 
     Blade spar cap uniax thickness pertubation.
+
+
+Geometric Blade Structure Parameterisation
+++++++++++++++++++++++++++++++++++++++++++
+
+In addition to the parameterisation described above that uses a flexible and
+normalized approach, a more intuitive parameterisation based on the lofted geometry
+is available in FUSED-Wind.
+This allows the user to place the spar caps, webs, leading and trailing edge
+reinforments relative to a reference plane, making it easy to generate a new
+structural geometry from scratch.
+
+In addition to the structural input files described above, an input file
+with extension `.geo3d` can be provided.
+An example of the header of this file is shown below:
+
+.. literalinclude:: ../fusedwind/turbine/test/data_version_2/Param2_10MW.geo3d
+   :lines: 1-7
+
+Starting from the bottom line, the primary parameters describing the structural
+geometry are:
+
+* *cap_center_ps*, *cap_center_ss*: Lower and upper spar cap centers relative to the reference plane. Positive towards leading edge.
+
+* *cap_width_ps*, *cap_width_ss*: Lower and upper spar cap widths measured as surface curve length.
+
+* *te_width*, *le_width*: Trailing and leading edge reinforcement widths (le_width spans across the leading edge) measured as surface curve length.
+
+* *w01pos*, *w02pos*, *w03pos*: web positions relative to the reference plane. Positive towards leading edge.
+
+The above quantities are all a function of unit span normalized with the blade length.
+The additional parameters that need to be defined are:
+
+* *le_DPs*: DPs enclosing the leading edge reinforcement.
+* *te_DPs*: DPs enclosing the trailing edge reinforcements.
+* *cap_DPs*: indices that enclose the two spar caps.
+* *dominant_regions*: indices of regions that overwrite colliding regions
+* *struct_angle*: The angle relative to the rotor plane that the blade is rotated with before placing the webs vertically, defined positive nose down. Note that this angle is independent of the aerodynamic twist, and is purely used to place the webs and main laminates.
+
+The schematic below shows a blade cross section with the above quantities.
+
+.. _bladestructure_spline-fig:
+
+.. figure:: /images/param2_schematic.png
+    :width: 100 %
+    :align: center
+
+    Schematic showing the geometric parameterisation of the blade structure.
+
+The reference plane that the caps and webs are placed relative to is a vertical plane
+starting at the blade root, ending at the blade tip.
+This plane will thus be rotated *struct_angle + 90* degrees relative to the rotor plane as shown in the below figure.
+
+
+.. _bladestructure_spline-fig:
+
+.. figure:: /images/struct_param2_rotations.png
+    :width: 100 %
+    :align: center
+
+    Schematic showing the definition of the structural angle *struct_angle*.
+
+
+You can generate the structural geometry either as a pre-processing step to an optimization where you optimize using the `DP` parameterisation, or use this parameterisation directly in an optimization.
+We firstly show how to call the ``ComputeDPsParam2`` class directly, which requires a pre-computed lofted blade surface as well as either an `st3d` dictionary with the structural inputs or that you specify these manually.
+The example is located in ``fusedwind/examples/turbine/blade_struct_param2.py``.
+
+The initial step is to import the necessary Python modules, as well as the classes
+used in this example, which are ``PGL`` for generating the lofted surface,
+and methods and classes from ``fusedwind.turbine.structure``:
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2.py
+    :start-after: # --- 1
+    :end-before: # --- 2
+
+The next step is to generate the lofted surface with PGL.
+You can find more documentation on PGL in the docs of this library;
+here we just use it to make a simple surface using the planform
+definition of the DTU 10MW RWT, and a series of airfoils with different
+relative thicknesses.
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2.py
+    :start-after: # --- 2
+    :end-before: # --- 3
+
+Now we can generate the structural geometry.
+In this example, we read the structural definition from an input file,
+but it is easy to generate it manually and pass directly into the class.
+If you run this example in iPython, you can inspect the st3d object keys,
+where you will see that you can set all the above described structural
+parameters.
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2.py
+    :start-after: # --- 3
+    :end-before: # --- 4
+
+Finally, the ``ComputeDPsParam2`` class provides some basic plot methods
+to inspect the final structure, which are shown in the below figures.
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2.py
+    :start-after: # --- 4
+    :end-before: # --- 5
+
+.. _bladestructure_param2-tip-fig:
+
+.. figure:: /images/struct_param2_tipview.png
+   :width: 100 %
+   :align: center
+
+   Blade structure generated using the ``ComputeDPsParam2`` class viewed from the tip
+   in the rotor coordinate system.
+
+Note that the third shear web is parallel to the main laminate and intersects the
+trailing edge panel at approximately *r/R*=0.65, where it should stop.
+Although the current parameterisation does not allow for discontinuous DP definitions
+in the spanwise direction, this can be handled by collapsing the web DP onto the trailing edge panel DP.
+However, this requires that the meshing code used has a check for zero thickness
+regions and removes these before meshing.
+If this capability is not available, set the parameter ``min_width`` to something
+greater than zero.
+It is recommended that the trailing edge reinforcement and cap regions are specified as so-called ``dominant_regions``,
+which means that other regions are displaced by these to avoid negative widths.
+For regions not part of the ``dominant_regions``, colliding region edges (DPs) are moved to the mid-point between the two.
+
+.. _bladestructure_param2-top-fig:
+
+.. figure:: /images/struct_param2_topview.png
+     :width: 100 %
+     :align: center
+
+     Blade structure generated using the ``ComputeDPsParam2`` class viewed from the suction side
+     in the rotor coordinate system.
+
+You can easily modify the inputs manually. Below we shift the main laminates and webs
+forward and set the strucural angle to 15 deg.:
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2.py
+    :start-after: # --- 5
+    :end-before: # --- 6
+
+with the following effect:
+
+
+.. _bladestructure_param2-top-fig:
+
+.. figure:: /images/struct_param2_tipview_struct_angle15.png
+     :width: 100 %
+     :align: center
+
+     Plot of a blade structure with the main laminates moved forward and angled 15 degrees
+     relative to the rotor plane.
+
+In the above figure, it is also evident that some regions have collapsed to zero
+width on the outer section.
+The leading panels between the spar caps and the leading edge reinforcement have
+been displaced by the spar caps, and the similarly the trailing edge web DPs
+have collapsed onto the trailing edge DPs.
+Note that the plotting functions in ``ComputeDPsParam2`` plots only valid
+regions, although they still exist in the parameterisation.
+
+To use the ``ComputeDPsParam2`` class as part of an OpenMDAO workflow,
+wrapper classes are provided in ``fusedwind.turbine.structure``.
+
+The example in ``fusedwind/examples/turbine/blade_struct_param2_workflow.py``
+shows how to set this up with a splined planform and structural geometry,
+and add design variables to control the structural geometry in an
+optimization context.
+In the example, we add splines to the pressure and suction side spar cap width
+inputs, and modify the control points ``cap_width_ss_C`` which controls both splines.
+
+.. literalinclude:: ../fusedwind/examples/turbine/blade_struct_param2_workflow.py
+
+Running the example should produce the following plot showing the increased cap width.
+
+.. figure:: /images/struct_param2_cap_width_C.png
+     :width: 100 %
+     :align: center
+
+     Plot of the spar cap width modified using an FFD Bezier spline.
