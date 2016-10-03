@@ -754,17 +754,16 @@ class ComputeDPsParam2(object):
 
         # check for negative region widths
         for i in range(self.ni):
-            for j in range(DPs[i, :].shape[0]-1):
-                k = 1
-                if np.diff(DPs[i, [j, j+k]]) < 0.:
-                    if j in self.dominant_regions and j+k not in self.cap_DPs:
-                        DPs[i, j+k] = DPs[i, j] + self.min_width
-                    elif j+k in self.dominant_regions and j not in self.cap_DPs:
-                        DPs[i, j] = DPs[i, j+k] - self.min_width
+            for j in range(1, DPs.shape[1]-1):
+                if np.diff(DPs[i, [j, j+1]]) < 0.:
+                    if j-1 in self.dominant_regions and j+1 not in self.cap_DPs:
+                        DPs[i, j+1] = DPs[i, j] + self.min_width
+                    elif j+1 in self.dominant_regions and j not in self.cap_DPs:
+                        DPs[i, j] = DPs[i, j+1] - self.min_width
                     else:
-                        mid = 0.5 * (DPs[i, j] + DPs[i, j+k])
+                        mid = 0.5 * (DPs[i, j] + DPs[i, j+1])
                         DPs[i, j] = mid - self.min_width
-                        DPs[i, j+k] = mid + self.min_width
+                        DPs[i, j+1] = mid + self.min_width
 
     def plot(self, isec=None, ifig=1, coordsys='rotor'):
 

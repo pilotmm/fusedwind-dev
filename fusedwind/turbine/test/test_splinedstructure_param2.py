@@ -46,7 +46,7 @@ def configure_with_surface():
     spl = p.root.add('st_splines', SplinedBladeStructureParam2(st3dn, (200, nsec, 3)), promotes=['*'])
 
     p.root.add('st_props', BladeStructureProperties((200, nsec, 3), st3dn,
-                                                    [3, 6, 9, 12]),
+                                                    [4, 7, 10, 13]),
                                                     promotes=['*'])
 
     spl.add_spline(('cap_width_ss',
@@ -74,9 +74,9 @@ class TestSplinedBladeStructure(unittest.TestCase):
         0.4135107 ,  0.43302372,  0.53967981,  0.55926998,  0.77011888,
         0.89345515,  0.99      ,  1.        ])
 
-        DPs_i17 = np.array([-1.        , -0.99      , -0.74739708, -0.74739708, -0.54139914,
-       -0.49983921, -0.24553101, -0.2031681 , -0.17981903,  0.17913871,
-        0.20112794,  0.24359934,  0.49681105,  0.53807932,  0.74835276,
+        DPs_i17 = np.array([-1.        , -0.99      , -0.74739708, -0.74739708, -0.5414817 ,
+       -0.49992362, -0.24561462, -0.20325066, -0.17981903,  0.17913871,
+        0.20121045,  0.2436819 ,  0.49689473,  0.53816183,  0.74835276,
         0.74835276,  0.99      ,  1.        ])
 
         p = configure_with_surface()
