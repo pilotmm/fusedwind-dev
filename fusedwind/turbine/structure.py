@@ -432,7 +432,7 @@ def interpolate_bladestructure(st3d, s_new):
 
     st3dn = {}
     sorg = st3d['s']
-    st3dn['s'] = s_new
+    st3dn['s'] = s_new.copy()
     st3dn['version'] = st3d['version']
     st3dn['materials'] = st3d['materials']
     st3dn['matprops'] = st3d['matprops']
@@ -448,12 +448,12 @@ def interpolate_bladestructure(st3d, s_new):
         st3dn['cap_DPs'] = st3d['cap_DPs']
         st3dn['te_DPs'] = st3d['te_DPs']
         st3dn['le_DPs'] = st3d['le_DPs']
-        names = ['s', 'cap_center_ps',
-                       'cap_center_ss',
-                       'cap_width_ps',
-                       'cap_width_ss',
-                       'te_width',
-                       'le_width']
+        names = ['cap_center_ps',
+                 'cap_center_ss',
+                 'cap_width_ps',
+                 'cap_width_ss',
+                 'te_width',
+                 'le_width']
         names.extend(['w%02dpos' % i for i in range(1, len(st3d['web_def']))])
         for name in names:
             tck = pchip(sorg, st3d[name])
