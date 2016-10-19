@@ -432,7 +432,7 @@ def interpolate_bladestructure(st3d, s_new):
 
     st3dn = {}
     sorg = st3d['s']
-    st3dn['s'] = s_new
+    st3dn['s'] = s_new.copy()
     st3dn['version'] = st3d['version']
     st3dn['materials'] = st3d['materials']
     st3dn['matprops'] = st3d['matprops']
@@ -448,12 +448,12 @@ def interpolate_bladestructure(st3d, s_new):
         st3dn['cap_DPs'] = st3d['cap_DPs']
         st3dn['te_DPs'] = st3d['te_DPs']
         st3dn['le_DPs'] = st3d['le_DPs']
-        names = ['s', 'cap_center_ps',
-                       'cap_center_ss',
-                       'cap_width_ps',
-                       'cap_width_ss',
-                       'te_width',
-                       'le_width']
+        names = ['cap_center_ps',
+                 'cap_center_ss',
+                 'cap_width_ps',
+                 'cap_width_ss',
+                 'te_width',
+                 'le_width']
         names.extend(['w%02dpos' % i for i in range(1, len(st3d['web_def']))])
         for name in names:
             tck = pchip(sorg, st3d[name])
@@ -754,17 +754,16 @@ class ComputeDPsParam2(object):
 
         # check for negative region widths
         for i in range(self.ni):
-            for j in range(DPs[i, :].shape[0]-1):
-                k = 1
-                if np.diff(DPs[i, [j, j+k]]) < 0.:
-                    if j in self.dominant_regions and j+k not in self.cap_DPs:
-                        DPs[i, j+k] = DPs[i, j] + self.min_width
-                    elif j+k in self.dominant_regions and j not in self.cap_DPs:
-                        DPs[i, j] = DPs[i, j+k] - self.min_width
+            for j in range(1, DPs.shape[1]-1):
+                if np.diff(DPs[i, [j, j+1]]) < 0.:
+                    if j-1 in self.dominant_regions and j+1 not in self.cap_DPs:
+                        DPs[i, j+1] = DPs[i, j] + self.min_width
+                    elif j+1 in self.dominant_regions and j not in self.cap_DPs:
+                        DPs[i, j] = DPs[i, j+1] - self.min_width
                     else:
-                        mid = 0.5 * (DPs[i, j] + DPs[i, j+k])
+                        mid = 0.5 * (DPs[i, j] + DPs[i, j+1])
                         DPs[i, j] = mid - self.min_width
-                        DPs[i, j+k] = mid + self.min_width
+                        DPs[i, j+1] = mid + self.min_width
 
     def plot(self, isec=None, ifig=1, coordsys='rotor'):
 
