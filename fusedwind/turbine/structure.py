@@ -1183,9 +1183,9 @@ class SplinedBladeStructureParam2(SplinedBladeStructureBase):
             names = name
         # decode the name
         if names[0] in self._param2_names:
-            self._add_param2_spline(names, Cx, spline_type, scaler=1.)
+            self._add_param2_spline(names, Cx, spline_type, scaler)
         else:
-            self._add_mat_spline(names, Cx, spline_type, scaler=1.)
+            self._add_mat_spline(names, Cx, spline_type, scaler)
 
     def _add_param2_spline(self, names, Cx, spline_type='bezier', scaler=1.):
 
