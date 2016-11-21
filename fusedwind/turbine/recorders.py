@@ -3,6 +3,7 @@ import numpy as np
 
 from openmdao.recorders.base_recorder import BaseRecorder
 from fusedwind.turbine.structure import write_bladestructure
+from fusedwind.turbine.geometry import write_blade_planform
 
 
 def get_structure_recording_vars(st3d, with_props=False, with_CPs=False):
@@ -64,7 +65,14 @@ def get_structure_recording_vars(st3d, with_props=False, with_CPs=False):
     recording_vars.append('matprops')
     recording_vars.append('failmat')
     recording_vars.append('s_st')
-
+    if 'cap_width_ps' in st3d.keys():
+        recording_vars.extend(['cap_center_ps',
+                               'cap_center_ss',
+                               'cap_width_ps',
+                               'cap_width_ss',
+                               'te_width',
+                               'le_width', 'struct_angle'])
+        recording_vars.extend(['w%02dpos' % i for i in range(1, len(st3d['web_def']))])
     if with_props:
         recording_vars.extend(['pacc_u',
                                'pacc_l',
@@ -83,14 +91,30 @@ def write_recorded_bladestructure(st3d, db, coordinate, filebase):
 
     s = st3d['s']
     stnew = {}
-    stnew['s'] = s
+    stnew['s'] = data['s_st']
     stnew['materials'] = st3d['materials']
     stnew['matprops'] = st3d['matprops']
     stnew['failcrit'] = st3d['failcrit']
     stnew['failmat'] = st3d['failmat']
     stnew['web_def'] = st3d['web_def']
     stnew['version'] = st3d['version']
-
+    if 'cap_width_ps' in st3d.keys():
+        try:
+            stnew['dominant_regions'] = st3d['dominant_regions']
+            stnew['cap_DPs'] = st3d['cap_DPs']
+            stnew['le_DPs'] = st3d['le_DPs']
+            stnew['te_DPs'] = st3d['le_DPs']
+            stnew['struct_angle'] = data['struct_angle']
+            stnew['cap_center_ps'] = data['cap_center_ps']
+            stnew['cap_center_ss'] = data['cap_center_ss']
+            stnew['cap_width_ps'] = data['cap_width_ps']
+            stnew['cap_width_ss'] = data['cap_width_ss']
+            stnew['te_width'] = data['te_width']
+            stnew['le_width'] = data['le_width']
+            for i in range(1, len(st3d['web_def'])):
+                stnew['w%02dpos' % i] = data['w%02dpos' % i]
+        except:
+            print 'Failed retrieving Param2 structural data from db'
     nsec = s.shape[0]
     nDP = st3d['DPs'].shape[1]
 
@@ -150,7 +174,7 @@ def get_planform_recording_vars(suffix='', with_CPs=False):
 
     recording_vars = []
 
-    names = ['s', 'x', 'y', 'z', 'rot_z', 'rot_y', 'rot_z',
+    names = ['s', 'x', 'y', 'z', 'rot_x', 'rot_y', 'rot_z',
              'chord', 'rthick', 'p_le']
 
     if suffix != '':
@@ -168,3 +192,18 @@ def get_planform_recording_vars(suffix='', with_CPs=False):
     recording_vars.extend(cp_vars)
 
     return recording_vars
+
+def write_recorded_planform(db, coordinate, filebase):
+
+    data = db[coordinate]['Unknowns']
+    pf = {}
+    names = ['x', 'y', 'z', 'rot_x', 'rot_y', 'rot_z',
+             'chord', 'rthick', 'p_le']
+    for name in names:
+        try:
+            pf[name] = data[name]
+        except:
+            print '%s not found in database' % name
+            pf[name] = np.zeros(data['x'].shape[0])
+
+    write_blade_planform(pf, filebase)
