@@ -103,7 +103,7 @@ def write_recorded_bladestructure(st3d, db, coordinate, filebase):
             stnew['dominant_regions'] = st3d['dominant_regions']
             stnew['cap_DPs'] = st3d['cap_DPs']
             stnew['le_DPs'] = st3d['le_DPs']
-            stnew['te_DPs'] = st3d['le_DPs']
+            stnew['te_DPs'] = st3d['te_DPs']
             stnew['struct_angle'] = data['struct_angle']
             stnew['cap_center_ps'] = data['cap_center_ps']
             stnew['cap_center_ss'] = data['cap_center_ss']
