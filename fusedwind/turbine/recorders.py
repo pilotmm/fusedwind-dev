@@ -91,7 +91,7 @@ def write_recorded_bladestructure(st3d, db, coordinate, filebase):
 
     s = st3d['s']
     stnew = {}
-    stnew['s'] = s
+    stnew['s'] = data['s_st']
     stnew['materials'] = st3d['materials']
     stnew['matprops'] = st3d['matprops']
     stnew['failcrit'] = st3d['failcrit']
