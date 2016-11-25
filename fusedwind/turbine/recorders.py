@@ -4,6 +4,7 @@ import numpy as np
 from openmdao.recorders.base_recorder import BaseRecorder
 from fusedwind.turbine.structure import write_bladestructure
 from fusedwind.turbine.geometry import write_blade_planform
+from fusedwind.lib.geom_tools import calculate_length
 
 
 def get_structure_recording_vars(st3d, with_props=False, with_CPs=False):
@@ -85,7 +86,7 @@ def get_structure_recording_vars(st3d, with_props=False, with_CPs=False):
     return recording_vars
 
 
-def write_recorded_bladestructure(st3d, db, coordinate, filebase):
+def get_recorded_bladestructure(st3d, db, coordinate):
 
     data = db[coordinate]['Unknowns']
 
@@ -152,8 +153,13 @@ def write_recorded_bladestructure(st3d, db, coordinate, filebase):
         rnew['angles'] = As
         stnew['webs'].append(rnew)
 
-    write_bladestructure(stnew, filebase)
+    return stnew
 
+def write_recorded_bladestructure(st3d, db, coordinate, filebase):
+
+    stnew = get_recorded_bladestructure(st3d, db, coordinate)
+
+    write_bladestructure(stnew, filebase)
 
 def get_planform_recording_vars(suffix='', with_CPs=False):
     """
@@ -193,7 +199,7 @@ def get_planform_recording_vars(suffix='', with_CPs=False):
 
     return recording_vars
 
-def write_recorded_planform(db, coordinate, filebase):
+def get_recorded_planform(db, coordinate):
 
     data = db[coordinate]['Unknowns']
     pf = {}
@@ -205,5 +211,17 @@ def write_recorded_planform(db, coordinate, filebase):
         except:
             print '%s not found in database' % name
             pf[name] = np.zeros(data['x'].shape[0])
+
+    s = calculate_length(np.array([pf['x'], pf['y'], pf['z']]).T)
+
+    pf['blade_length'] = pf['z'][-1]
+    pf['s'] = s / s[-1]
+    pf['smax'] = s[-1]
+
+    return pf
+
+def write_recorded_planform(db, coordinate, filebase):
+
+    pf = get_recorded_planform(db, coordinate)
 
     write_blade_planform(pf, filebase)
